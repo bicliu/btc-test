@@ -208,6 +208,11 @@ int nScriptCheckThreads = 0;
 std::atomic_bool fImporting(false);
 std::atomic_bool fReindex(false);
 bool fTxIndex = false;
+
+bool fAddressIndex = true;
+bool fTimestampIndex = true;
+bool fSpentIndex = true;
+
 bool fHavePruned = false;
 bool fPruneMode = false;
 bool fIsBareMultisigStd = DEFAULT_PERMIT_BAREMULTISIG;
@@ -957,6 +962,16 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         // Store transaction in memory
         pool.addUnchecked(hash, entry, setAncestors, validForFeeEstimation);
 
+		// Add memory address index
+        if (fAddressIndex) {
+            pool.addAddressIndex(entry, view);
+        }
+
+        // Add memory spent index
+        if (fSpentIndex) {
+            pool.addSpentIndex(entry, view);
+        }
+
         // trim mempool and check if tx was trimmed
         if (!bypass_limits) {
             LimitMempoolSize(pool, gArgs.GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000, gArgs.GetArg("-mempoolexpiry", DEFAULT_MEMPOOL_EXPIRY) * 60 * 60);
@@ -1058,8 +1073,93 @@ bool GetTransaction(const uint256& hash, CTransactionRef& txOut, const Consensus
     return false;
 }
 
+typedef std::vector<unsigned char> valtype;
+bool DecodeAddressHash(const CScript& scriptPubKey, uint160& addrhash, int& addrType)
+{
+	std::vector<valtype> vSolutions;
+	txnouttype addressType;
 
+	if (Solver(scriptPubKey, addressType, vSolutions))
+	{
+		/*PUBKEY_ADDRESS, ==1        SCRIPT_ADDRESS, ==2*/
+        if(addressType !=TX_SCRIPTHASH && addressType !=TX_PUBKEY &&addressType !=TX_PUBKEYHASH)
+        {
+        	addrhash.SetNull();
+			addrType=0;
+			return false;
+        }
+        if(addressType== TX_SCRIPTHASH )
+        {
+            addrType=2;
+            addrhash=uint160(vSolutions[0]);
+			return true;
+        }
+        if(addressType==TX_PUBKEYHASH )
+        {
+            addrType=1;
+            addrhash=uint160(vSolutions[0]);
+			return true;
+        }
+        if(addressType== TX_PUBKEY)
+        {
+            addrType=1;
+            addrhash= Hash160(vSolutions[0]);
+			return true;
+        }
+	}
+	addrhash.SetNull();
+	addrType=0;
+	return false;
+}
 
+bool GetTimestampIndex(const unsigned int &high, const unsigned int &low, std::vector<uint256> &hashes)
+{
+    if (!fTimestampIndex)
+        return error("Timestamp index not enabled");
+
+    if (!pblocktree->ReadTimestampIndex(high, low, hashes))
+        return error("Unable to get hashes for timestamps");
+
+    return true;
+}
+
+bool GetSpentIndex(CSpentIndexKey &key, CSpentIndexValue &value)
+{
+    if (!fSpentIndex)
+        return false;
+
+    if (mempool.getSpentIndex(key, value))
+        return true;
+
+    if (!pblocktree->ReadSpentIndex(key, value))
+        return false;
+
+    return true;
+}
+
+bool GetAddressIndex(uint160 addressHash, int type,
+                     std::vector<std::pair<CAddressIndexKey, CAmount> > &addressIndex, int start, int end)
+{
+    if (!fAddressIndex)
+        return error("address index not enabled");
+
+    if (!pblocktree->ReadAddressIndex(addressHash, type, addressIndex, start, end))
+        return error("unable to get txids for address");
+
+    return true;
+}
+
+bool GetAddressUnspent(uint160 addressHash, int type,
+                       std::vector<std::pair<CAddressUnspentKey, CAddressUnspentValue> > &unspentOutputs)
+{
+    if (!fAddressIndex)
+        return error("address index not enabled");
+
+    if (!pblocktree->ReadAddressUnspentIndex(addressHash, type, unspentOutputs))
+        return error("unable to get txids for address");
+
+    return true;
+}
 
 
 
@@ -1562,11 +1662,33 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
         return DISCONNECT_FAILED;
     }
 
+	std::vector<std::pair<CAddressIndexKey, CAmount> > addressIndex;
+    std::vector<std::pair<CAddressUnspentKey, CAddressUnspentValue> > addressUnspentIndex;
+    //std::vector<std::pair<CSpentIndexKey, CSpentIndexValue> > spentIndex;
+
     // undo transactions in reverse order
     for (int i = block.vtx.size() - 1; i >= 0; i--) {
         const CTransaction &tx = *(block.vtx[i]);
         uint256 hash = tx.GetHash();
         bool is_coinbase = tx.IsCoinBase();
+
+		if (fAddressIndex) {
+
+            for (unsigned int k = tx.vout.size(); k-- > 0;) {
+                const CTxOut &out = tx.vout[k];
+                uint160 hashBytes;
+				int addressType;
+
+				if(DecodeAddressHash(out.scriptPubKey, hashBytes, addressType))
+				{
+					// undo receiving activity
+					addressIndex.push_back(std::make_pair(CAddressIndexKey(addressType, hashBytes, pindex->nHeight, i, hash, k, false), out.nValue));
+					// undo unspent index
+					addressUnspentIndex.push_back(std::make_pair(CAddressUnspentKey(addressType, hashBytes, hash, k), CAddressUnspentValue()));
+				}
+            }
+
+        }
 
         // Check that all outputs are available and match the outputs in the block itself
         // exactly.
@@ -1590,9 +1712,32 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
             }
             for (unsigned int j = tx.vin.size(); j-- > 0;) {
                 const COutPoint &out = tx.vin[j].prevout;
+				int undoHeight = txundo.vprevout[j].nHeight;
                 int res = ApplyTxInUndo(std::move(txundo.vprevout[j]), view, out);
                 if (res == DISCONNECT_FAILED) return DISCONNECT_FAILED;
                 fClean = fClean && res != DISCONNECT_UNCLEAN;
+
+				const CTxIn input = tx.vin[j];
+
+                /*if (fSpentIndex) {
+                    // undo and delete the spent index
+                    spentIndex.push_back(make_pair(CSpentIndexKey(input.prevout.hash, input.prevout.n), CSpentIndexValue()));
+                }*/
+
+                if (fAddressIndex) {
+                    const Coin &coin = view.AccessCoin(tx.vin[j].prevout);
+                    const CTxOut &prevout = coin.out;
+                    uint160 hashBytes;
+					int addressType;
+
+					if(DecodeAddressHash(prevout.scriptPubKey, hashBytes, addressType))
+					{
+						// undo spending activity
+						addressIndex.push_back(std::make_pair(CAddressIndexKey(addressType, hashBytes, pindex->nHeight, i, hash, j, true), prevout.nValue * -1));
+						// restore unspent index
+						addressUnspentIndex.push_back(std::make_pair(CAddressUnspentKey(addressType, hashBytes, input.prevout.hash, input.prevout.n), CAddressUnspentValue(prevout.nValue, prevout.scriptPubKey, undoHeight)));
+					}
+                }
             }
             // At this point, all of txundo.vprevout should have been moved out.
         }
@@ -1600,6 +1745,17 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
 
     // move best block pointer to prevout block
     view.SetBestBlock(pindex->pprev->GetBlockHash());
+
+	if (fAddressIndex) {
+        if (!pblocktree->EraseAddressIndex(addressIndex)) {
+            AbortNode(state, "Failed to delete address index");
+            return DISCONNECT_FAILED;
+        }
+        if (!pblocktree->UpdateAddressUnspentIndex(addressUnspentIndex)) {
+            AbortNode(state, "Failed to write address unspent index");
+            return DISCONNECT_FAILED;
+        }
+    }
 
     return fClean ? DISCONNECT_OK : DISCONNECT_UNCLEAN;
 }
@@ -1895,12 +2051,18 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     CAmount nFees = 0;
     int nInputs = 0;
     int64_t nSigOpsCost = 0;
+	
+	std::vector<std::pair<CAddressIndexKey, CAmount> > addressIndex;
+    std::vector<std::pair<CAddressUnspentKey, CAddressUnspentValue> > addressUnspentIndex;
+    std::vector<std::pair<CSpentIndexKey, CSpentIndexValue> > spentIndex;
+	
     blockundo.vtxundo.reserve(block.vtx.size() - 1);
     std::vector<PrecomputedTransactionData> txdata;
     txdata.reserve(block.vtx.size()); // Required so that pointers to individual PrecomputedTransactionData don't get invalidated
     for (unsigned int i = 0; i < block.vtx.size(); i++)
     {
         const CTransaction &tx = *(block.vtx[i]);
+		const uint256 txhash = tx.GetHash();
 
         nInputs += tx.vin.size();
 
@@ -1928,6 +2090,34 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                 return state.DoS(100, error("%s: contains a non-BIP68-final transaction", __func__),
                                  REJECT_INVALID, "bad-txns-nonfinal");
             }
+
+			if (fAddressIndex || fSpentIndex)
+            {
+                for (size_t j = 0; j < tx.vin.size(); j++) {
+                    const CTxIn input = tx.vin[j];
+                    const Coin& coin = view.AccessCoin(tx.vin[j].prevout);
+                    const CTxOut &prevout = coin.out;
+                    uint160 hashBytes;
+                    int addressType;
+                    if(DecodeAddressHash(prevout.scriptPubKey, hashBytes, addressType))
+					{
+						if(fAddressIndex && addressType > 0){
+                        	// record spending activity
+                        	addressIndex.push_back(std::make_pair(CAddressIndexKey(addressType, hashBytes, pindex->nHeight, i, txhash, j, true), prevout.nValue * -1));
+
+                        	// remove address from unspent index
+                        	addressUnspentIndex.push_back(std::make_pair(CAddressUnspentKey(addressType, hashBytes, input.prevout.hash, input.prevout.n), CAddressUnspentValue()));
+                    	}
+					}
+
+                    if (fSpentIndex) {
+                        // add the spent index to determine the txid and input that spent an output
+                        // and to find the amount and address from an input
+                        spentIndex.push_back(std::make_pair(CSpentIndexKey(input.prevout.hash, input.prevout.n), CSpentIndexValue(txhash, j, pindex->nHeight, prevout.nValue, addressType, hashBytes)));
+                    }
+                }
+
+            }
         }
 
         // GetTransactionSigOpCost counts 3 types of sigops:
@@ -1948,6 +2138,22 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                 return error("ConnectBlock(): CheckInputs on %s failed with %s",
                     tx.GetHash().ToString(), FormatStateMessage(state));
             control.Add(vChecks);
+        }
+
+		if (fAddressIndex) {
+            for (unsigned int k = 0; k < tx.vout.size(); k++) {
+                const CTxOut &out = tx.vout[k];
+                uint160 hashBytes;
+				int addressType;
+				if(DecodeAddressHash(out.scriptPubKey, hashBytes, addressType))
+				{
+					// record receiving activity
+                    addressIndex.push_back(std::make_pair(CAddressIndexKey(addressType, hashBytes, pindex->nHeight, i, txhash, k, false), out.nValue));
+
+                    // record unspent output
+                    addressUnspentIndex.push_back(std::make_pair(CAddressUnspentKey(addressType, hashBytes, txhash, k), CAddressUnspentValue(out.nValue, out.scriptPubKey, pindex->nHeight)));
+				}
+            }
         }
 
         CTxUndo undoDummy;
@@ -1984,6 +2190,24 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
 
     if (!WriteTxIndexDataForBlock(block, state, pindex))
         return false;
+
+	if (fAddressIndex) {
+        if (!pblocktree->WriteAddressIndex(addressIndex)) {
+            return AbortNode(state, "Failed to write address index");
+        }
+
+        if (!pblocktree->UpdateAddressUnspentIndex(addressUnspentIndex)) {
+            return AbortNode(state, "Failed to write address unspent index");
+        }
+    }
+
+    if (fSpentIndex)
+        if (!pblocktree->UpdateSpentIndex(spentIndex))
+            return AbortNode(state, "Failed to write transaction index");
+
+    if (fTimestampIndex)
+        if (!pblocktree->WriteTimestampIndex(CTimestampIndexKey(pindex->nTime, pindex->GetBlockHash())))
+            return AbortNode(state, "Failed to write timestamp index");
 
     assert(pindex->phashBlock);
     // add this block to the view's block chain
@@ -3777,6 +4001,18 @@ bool static LoadBlockIndexDB(const CChainParams& chainparams)
     pblocktree->ReadFlag("txindex", fTxIndex);
     LogPrintf("%s: transaction index %s\n", __func__, fTxIndex ? "enabled" : "disabled");
 
+	// Check whether we have an address index
+    pblocktree->ReadFlag("addressindex", fAddressIndex);
+    LogPrintf("%s: address index %s\n", __func__, fAddressIndex ? "enabled" : "disabled");
+
+    // Check whether we have a timestamp index
+    pblocktree->ReadFlag("timestampindex", fTimestampIndex);
+    LogPrintf("%s: timestamp index %s\n", __func__, fTimestampIndex ? "enabled" : "disabled");
+
+    // Check whether we have a spent index
+    pblocktree->ReadFlag("spentindex", fSpentIndex);
+    LogPrintf("%s: spent index %s\n", __func__, fSpentIndex ? "enabled" : "disabled");
+
     return true;
 }
 
@@ -4163,6 +4399,17 @@ bool LoadBlockIndex(const CChainParams& chainparams)
         // Use the provided setting for -txindex in the new database
         fTxIndex = gArgs.GetBoolArg("-txindex", DEFAULT_TXINDEX);
         pblocktree->WriteFlag("txindex", fTxIndex);
+
+		// Use the provided setting for -addressindex in the new database
+    	fAddressIndex = gArgs.GetBoolArg("-addressindex", true);
+    	pblocktree->WriteFlag("addressindex", fAddressIndex);
+
+    	// Use the provided setting for -timestampindex in the new database
+    	fTimestampIndex = gArgs.GetBoolArg("-timestampindex", true);
+    	pblocktree->WriteFlag("timestampindex", fTimestampIndex);
+
+    	fSpentIndex = gArgs.GetBoolArg("-spentindex", true);
+    	pblocktree->WriteFlag("spentindex", fSpentIndex);
     }
     return true;
 }

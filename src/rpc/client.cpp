@@ -145,6 +145,13 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "echojson", 9, "arg9" },
     { "rescanblockchain", 0, "start_height"},
     { "rescanblockchain", 1, "stop_height"},
+
+	{ "getspentinfo", 0, "txid"},
+    { "getaddresstxids", 0, "addressindex"},
+    { "getaddressbalance", 0, "addressindex"},
+    { "getaddressdeltas", 0, "addressindex"},
+    { "getaddressutxos", 0, "addressindex"},
+    { "getaddressmempool", 0, "addressindex"},
 };
 
 class CRPCConvertTable

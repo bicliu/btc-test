@@ -10,6 +10,8 @@
 #include <dbwrapper.h>
 #include <chain.h>
 
+#include "spentindex.h"
+
 #include <map>
 #include <string>
 #include <utility>
@@ -120,6 +122,20 @@ public:
     bool WriteReindexing(bool fReindexing);
     bool ReadReindexing(bool &fReindexing);
     bool ReadTxIndex(const uint256 &txid, CDiskTxPos &pos);
+
+	bool ReadSpentIndex(CSpentIndexKey &key, CSpentIndexValue &value);
+    bool UpdateSpentIndex(const std::vector<std::pair<CSpentIndexKey, CSpentIndexValue> >&vect);
+    bool UpdateAddressUnspentIndex(const std::vector<std::pair<CAddressUnspentKey, CAddressUnspentValue > >&vect);
+    bool ReadAddressUnspentIndex(uint160 addressHash, int type,
+                                 std::vector<std::pair<CAddressUnspentKey, CAddressUnspentValue> > &vect);
+    bool WriteAddressIndex(const std::vector<std::pair<CAddressIndexKey, CAmount> > &vect);
+    bool EraseAddressIndex(const std::vector<std::pair<CAddressIndexKey, CAmount> > &vect);
+    bool ReadAddressIndex(uint160 addressHash, int type,
+                          std::vector<std::pair<CAddressIndexKey, CAmount> > &addressIndex,
+                          int start = 0, int end = 0);
+    bool WriteTimestampIndex(const CTimestampIndexKey &timestampIndex);
+    bool ReadTimestampIndex(const unsigned int &high, const unsigned int &low, std::vector<uint256> &vect);
+	
     bool WriteTxIndex(const std::vector<std::pair<uint256, CDiskTxPos> > &vect);
     bool WriteFlag(const std::string &name, bool fValue);
     bool ReadFlag(const std::string &name, bool &fValue);

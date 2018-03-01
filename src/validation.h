@@ -19,6 +19,8 @@
 #include <sync.h>
 #include <versionbits.h>
 
+#include "spentindex.h"
+
 #include <algorithm>
 #include <exception>
 #include <map>
@@ -285,6 +287,16 @@ double GuessVerificationProgress(const ChainTxData& data, const CBlockIndex* pin
 
 /** Calculate the amount of disk space the block & undo files currently use */
 uint64_t CalculateCurrentUsage();
+
+bool DecodeAddressHash(const CScript& scriptPubKey, uint160& addrhash, int& addrType);
+bool GetTimestampIndex(const unsigned int &high, const unsigned int &low, std::vector<uint256> &hashes);
+bool GetSpentIndex(CSpentIndexKey &key, CSpentIndexValue &value);
+bool GetAddressIndex(uint160 addressHash, int type,
+                     std::vector<std::pair<CAddressIndexKey, CAmount> > &addressIndex,
+                     int start = 0, int end = 0);
+bool GetAddressUnspent(uint160 addressHash, int type,
+                       std::vector<std::pair<CAddressUnspentKey, CAddressUnspentValue> > &unspentOutputs);
+
 
 /**
  *  Mark one block file as pruned.
