@@ -1748,11 +1748,11 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
 
 	if (fAddressIndex) {
         if (!pblocktree->EraseAddressIndex(addressIndex)) {
-            AbortNode(state, "Failed to delete address index");
+            error("Failed to delete address index");
             return DISCONNECT_FAILED;
         }
         if (!pblocktree->UpdateAddressUnspentIndex(addressUnspentIndex)) {
-            AbortNode(state, "Failed to write address unspent index");
+            error("Failed to write address unspent index");
             return DISCONNECT_FAILED;
         }
     }
