@@ -758,6 +758,7 @@ public:
     ScriptError GetScriptError() const { return error; }
 };
 
+bool DecodeAddressHash(const CScript& scriptPubKey, uint160& addrhash, int& addrType);
 bool GetTimestampIndex(const unsigned int &high, const unsigned int &low, const bool fActiveOnly, std::vector<std::pair<uint256, unsigned int> > &hashes);
 bool GetSpentIndex(CSpentIndexKey &key, CSpentIndexValue &value);
 bool GetAddressIndex(uint160 addressHash, int type,
