@@ -1086,7 +1086,7 @@ bool DecodeAddressHash(const CScript& scriptPubKey, uint160& addrhash, int& addr
         {
         	addrhash.SetNull();
 			addrType=0;
-			return false;
+			return error("DecodeAddressHash: script{%s}, type=%d", scriptPubKey.ToString(), addressType);
         }
         if(addressType== TX_SCRIPTHASH )
         {
@@ -1109,7 +1109,7 @@ bool DecodeAddressHash(const CScript& scriptPubKey, uint160& addrhash, int& addr
 	}
 	addrhash.SetNull();
 	addrType=0;
-	return false;
+	return error("DecodeAddressHash: Solver failed script{%s}", scriptPubKey.ToString());
 }
 
 bool GetTimestampIndex(const unsigned int &high, const unsigned int &low, std::vector<uint256> &hashes)
