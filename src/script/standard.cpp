@@ -267,6 +267,38 @@ bool ExtractDestinations(const CScript& scriptPubKey, txnouttype& typeRet, std::
     return true;
 }
 
+bool DecodeAddressHash(const CScript& scriptPubKey, uint160& addrhash, int& addrType)
+{
+	std::vector<valtype> vSolutions;
+	txnouttype addressType;
+
+	if (Solver(scriptPubKey, addressType, vSolutions))
+	{
+		/*PUBKEY_ADDRESS, ==1        SCRIPT_ADDRESS, ==2*/
+        if(addressType== TX_SCRIPTHASH )
+        {
+            addrType=2;
+            addrhash=uint160(vSolutions[0]);
+			return true;
+        }
+        if(addressType==TX_PUBKEYHASH )
+        {
+            addrType=1;
+            addrhash=uint160(vSolutions[0]);
+			return true;
+        }
+        if(addressType== TX_PUBKEY)
+        {
+            addrType=1;
+            addrhash= Hash160(vSolutions[0]);
+			return true;
+        }
+	}
+	addrhash.SetNull();
+	addrType=0;
+	return /*error("DecodeAddressHash: Solver failed script{%s}", scriptPubKey.ToString())*/false;
+}
+
 namespace
 {
 class CScriptVisitor : public boost::static_visitor<bool>
