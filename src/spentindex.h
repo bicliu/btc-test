@@ -46,19 +46,40 @@ struct CSpentIndexValue {
     int blockHeight;
     CAmount satoshis;
     int addressType;
-    CTxDestination addressHash;
+    /*uint160*/CTxDestination addressHash;
 
-    ADD_SERIALIZE_METHODS;
+    //ADD_SERIALIZE_METHODS;
 
-    template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action/*, int nType, int nVersion*/) {
-        READWRITE(txid);
-        READWRITE(inputIndex);
-        READWRITE(blockHeight);
-        READWRITE(satoshis);
-        READWRITE(addressType);
+    //template <typename Stream, typename Operation>
+    //inline void SerializationOp(Stream& s, Operation ser_action/*, int nType, int nVersion*/) {
+    //    READWRITE(txid);
+    //    READWRITE(inputIndex);
+    //    READWRITE(blockHeight);
+    //    READWRITE(satoshis);
+    //    READWRITE(addressType);
         //READWRITE(addressHash);
+    //    SerializeDestination(s, addressHash);
+    //}
+    size_t GetSerializeSize(/*int nType, int nVersion*/) const {
+        return (size_t)(SizeDestination(addressHash) + 52);
+    }
+    template<typename Stream>
+    void Serialize(Stream& s/*, int nType, int nVersion*/) const {
+    	txid.Serialize(s);
+        ser_writedata32(s, inputIndex);
+        ser_writedata32(s, blockHeight);
+		Serialize(s, satoshis);
+		ser_writedata32(s, addressType);
         SerializeDestination(s, addressHash);
+    }
+    template<typename Stream>
+    void Unserialize(Stream& s/*, int nType, int nVersion*/) {
+        txid.Unserialize(s/*, nType, nVersion*/);
+		inputIndex = ser_readdata32(s);
+		blockHeight = ser_readdata32(s);
+		Unserialize(s, satoshis);
+		addressType = ser_readdata32(s);
+        UnserializeDestination(s, addressHash);
     }
 
     CSpentIndexValue(uint256 t, unsigned int i, int h, CAmount s, int type, /*uint160*/CTxDestination a) {
