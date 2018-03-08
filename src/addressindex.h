@@ -8,6 +8,8 @@
 
 #include "uint256.h"
 #include "amount.h"
+#include "standard.h"
+
 
 struct CMempoolAddressDelta
 {
@@ -34,12 +36,12 @@ struct CMempoolAddressDelta
 struct CMempoolAddressDeltaKey
 {
     int type;
-    uint160 addressBytes;
+    /*uint160*/CTxDestination addressBytes;
     uint256 txhash;
     unsigned int index;
     int spending;
 
-    CMempoolAddressDeltaKey(int addressType, uint160 addressHash, uint256 hash, unsigned int i, int s) {
+    CMempoolAddressDeltaKey(int addressType, /*uint160*/CTxDestination addressHash, uint256 hash, unsigned int i, int s) {
         type = addressType;
         addressBytes = addressHash;
         txhash = hash;
@@ -47,7 +49,7 @@ struct CMempoolAddressDeltaKey
         spending = s;
     }
 
-    CMempoolAddressDeltaKey(int addressType, uint160 addressHash) {
+    CMempoolAddressDeltaKey(int addressType, /*uint160*/CTxDestination addressHash) {
         type = addressType;
         addressBytes = addressHash;
         txhash.SetNull();

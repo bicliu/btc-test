@@ -267,36 +267,54 @@ bool ExtractDestinations(const CScript& scriptPubKey, txnouttype& typeRet, std::
     return true;
 }
 
-bool DecodeAddressHash(const CScript& scriptPubKey, uint160& addrhash, int& addrType)
+bool DecodeAddressHash(const CScript& scriptPubKey, /*uint160*/CTxDestination& addressRet, int& addrType)
 {
 	std::vector<valtype> vSolutions;
-	txnouttype addressType;
+    txnouttype whichType;
+    if (Solver(scriptPubKey, whichType, vSolutions))
+    {
+    	addrType = (int)whichType;
+        if (whichType == TX_PUBKEY)
+        {
+            CPubKey pubKey(vSolutions[0]);
+            if (!pubKey.IsValid())
+                return false;
 
-	if (Solver(scriptPubKey, addressType, vSolutions))
-	{
-		/*PUBKEY_ADDRESS, ==1        SCRIPT_ADDRESS, ==2*/
-        if(addressType== TX_SCRIPTHASH )
-        {
-            addrType=2;
-            addrhash=uint160(vSolutions[0]);
-			return true;
+            addressRet = pubKey.GetID();
+            return true;
         }
-        if(addressType==TX_PUBKEYHASH )
+        else if (whichType == TX_PUBKEYHASH)
         {
-            addrType=1;
-            addrhash=uint160(vSolutions[0]);
-			return true;
+            addressRet = CKeyID(uint160(vSolutions[0]));
+            return true;
         }
-        if(addressType== TX_PUBKEY)
+        else if (whichType == TX_SCRIPTHASH)
         {
-            addrType=1;
-            addrhash= Hash160(vSolutions[0]);
-			return true;
+            addressRet = CScriptID(uint160(vSolutions[0]));
+            return true;
+        } else if (whichType == TX_WITNESS_V0_KEYHASH) {
+            WitnessV0KeyHash hash;
+            std::copy(vSolutions[0].begin(), vSolutions[0].end(), hash.begin());
+            addressRet = hash;
+            return true;
+        } else if (whichType == TX_WITNESS_V0_SCRIPTHASH) {
+            WitnessV0ScriptHash hash;
+            std::copy(vSolutions[0].begin(), vSolutions[0].end(), hash.begin());
+            addressRet = hash;
+            return true;
+        } else if (whichType == TX_WITNESS_UNKNOWN) {
+            WitnessUnknown unk;
+            unk.version = vSolutions[0][0];
+            std::copy(vSolutions[1].begin(), vSolutions[1].end(), unk.program);
+            unk.length = vSolutions[1].size();
+            addressRet = unk;
+            return true;
         }
-	}
-	addrhash.SetNull();
-	addrType=0;
-	return /*error("DecodeAddressHash: Solver failed script{%s}", scriptPubKey.ToString())*/false;
+    }
+    // Multisig txns have more than one address...
+    addrType = 0;
+    addressRet = CNoDestination;
+    return false;
 }
 
 namespace
@@ -346,7 +364,202 @@ public:
         return true;
     }
 };
+
+class DestinationSize : public boost::static_visitor<int>
+{
+public:
+    int operator()(const CKeyID& id) const
+    {
+        return 20;
+    }
+
+    int operator()(const CScriptID& id) const
+    {
+        return 20;
+    }
+
+    int operator()(const WitnessV0KeyHash& id) const
+    {
+        return 20;
+    }
+
+    int operator()(const WitnessV0ScriptHash& id) const
+    {
+        return 32;
+    }
+
+    int operator()(const WitnessUnknown& id) const
+    {
+        if (id.version < 1 || id.version > 16 || id.length < 2 || id.length > 40) {
+            return 0;
+        }
+        return (8 + id.length);
+    }
+
+    int operator()(const CNoDestination& no) const { return 0; }
+};
+
+class DestinationSerialize : public boost::static_visitor<void>
+{
+private:
+	template<typename Stream>
+    Stream & s;
+
+public:
+    DestinationEncoder(Stream & ss;) : s(ss) {}
+
+    void operator()(const CKeyID& id) const
+    {
+        id.Serialize(s);
+        return;
+    }
+
+    void operator()(const CScriptID& id) const
+    {
+        id.Serialize(s);
+        return;
+    }
+
+    void operator()(const WitnessV0KeyHash& id) const
+    {
+        id.Serialize(s);
+        return;
+    }
+
+    void operator()(const WitnessV0ScriptHash& id) const
+    {
+        id.Serialize(s);
+        return;
+    }
+
+    void operator()(const WitnessUnknown& id) const
+    {
+        if (id.version < 1 || id.version > 16 || id.length < 2 || id.length > 40) {
+            return;
+        }
+        ser_writedata32(s, id.version);
+		ser_writedata32(s, id.length);
+		for(int i = 0; i < id.length; i++)
+			ser_writedata8(s, id.program[i]);
+        return;
+    }
+
+    void operator()(const CNoDestination& no) const { return; }
+};
+
+class DestinationUnserialize : public boost::static_visitor<void>
+{
+private:
+	template<typename Stream>
+    Stream & s;
+
+public:
+    DestinationEncoder(Stream & ss;) : s(ss) {}
+
+    void operator()(CKeyID& id)
+    {
+        id.Unserialize(s);
+        return;
+    }
+
+    void operator()(CScriptID& id)
+    {
+        id.Unserialize(s);
+        return;
+    }
+
+    void operator()(WitnessV0KeyHash& id)
+    {
+        id.Unserialize(s);
+        return;
+    }
+
+    void operator()(WitnessV0ScriptHash& id)
+    {
+        id.Unserialize(s);
+        return;
+    }
+
+    void operator()(WitnessUnknown& id)
+    {
+        id.version = ser_readdata32(s);
+		id.length = ser_readdata32(s);
+		if (id.version < 1 || id.version > 16 || id.length < 2 || id.length > 40) {
+			id.version = 0;
+			id.length = 0;
+            return;
+        }
+		for(int i = 0; i < id.length; i++)
+			id.program[i] = ser_readdata8(s);
+        return;
+    }
+
+    void operator()(CNoDestination& no) { return; }
+};
+
+class DestinationSetNull : public boost::static_visitor<void>
+{
+public:
+    void operator()(CKeyID& id)
+    {
+        id.SetNull();
+        return;
+    }
+
+    void operator()(CScriptID& id)
+    {
+        id.SetNull();
+        return;
+    }
+
+    void operator()(WitnessV0KeyHash& id)
+    {
+        id.SetNull();
+        return;
+    }
+
+    void operator()(WitnessV0ScriptHash& id)
+    {
+        id.SetNull();
+        return;
+    }
+
+    void operator()(WitnessUnknown& id)
+    {
+        id.version = 0;
+		id.length = 0;
+		for(int i = 0; i < 40; i++)
+			id.program[i] = 0;
+        return;
+    }
+
+    void operator()(CNoDestination& no) { return; }
+};
+
+
 } // namespace
+
+int SizeDestination(const CTxDestination& dest)
+{
+	return boost::apply_visitor(DestinationSize(), dest);
+}
+
+template<typename Stream>
+void SerializeDestination(Stream & ss, const CTxDestination& dest)
+{
+	boost::apply_visitor(DestinationSerialize(ss), dest);
+}
+
+template<typename Stream>
+void UnserializeDestination(Stream & ss, CTxDestination& dest)
+{
+	boost::apply_visitor(DestinationUnserialize(ss), dest);
+}
+
+void SetNullDestination(CTxDestination& dest)
+{
+	boost::apply_visitor(DestinationSetNull(), dest);
+}
 
 CScript GetScriptForDestination(const CTxDestination& dest)
 {

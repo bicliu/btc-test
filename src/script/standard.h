@@ -162,6 +162,11 @@ bool ExtractDestination(const CScript& scriptPubKey, CTxDestination& addressRet)
  */
 bool ExtractDestinations(const CScript& scriptPubKey, txnouttype& typeRet, std::vector<CTxDestination>& addressRet, int& nRequiredRet);
 
+int SizeDestination(const CTxDestination& dest);
+template<typename Stream> void SerializeDestination(Stream & ss, const CTxDestination& dest);
+template<typename Stream> void UnserializeDestination(Stream & ss, CTxDestination& dest);
+void SetNullDestination(CTxDestination& dest);
+
 /**
  * Generate a Bitcoin scriptPubKey for the given CTxDestination. Returns a P2PKH
  * script for a CKeyID destination, a P2SH script for a CScriptID, and an empty
@@ -175,7 +180,7 @@ CScript GetScriptForRawPubKey(const CPubKey& pubkey);
 /** Generate a multisig script. */
 CScript GetScriptForMultisig(int nRequired, const std::vector<CPubKey>& keys);
 
-bool DecodeAddressHash(const CScript& scriptPubKey, uint160& addrhash, int& addrType);
+bool DecodeAddressHash(const CScript& scriptPubKey, /*uint160*/CTxDestination& addressRet, int& addrType);
 
 /**
  * Generate a pay-to-witness script for the given redeem script. If the redeem

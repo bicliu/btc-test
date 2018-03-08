@@ -1098,7 +1098,7 @@ bool GetSpentIndex(CSpentIndexKey &key, CSpentIndexValue &value)
     return true;
 }
 
-bool GetAddressIndex(uint160 addressHash, int type,
+bool GetAddressIndex(CTxDestination addressHash, int type,
                      std::vector<std::pair<CAddressIndexKey, CAmount> > &addressIndex, int start, int end)
 {
     if (!fAddressIndex)
@@ -1110,7 +1110,7 @@ bool GetAddressIndex(uint160 addressHash, int type,
     return true;
 }
 
-bool GetAddressUnspent(uint160 addressHash, int type,
+bool GetAddressUnspent(CTxDestination addressHash, int type,
                        std::vector<std::pair<CAddressUnspentKey, CAddressUnspentValue> > &unspentOutputs)
 {
     if (!fAddressIndex)
@@ -1637,7 +1637,7 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
 
             for (unsigned int k = tx.vout.size(); k-- > 0;) {
                 const CTxOut &out = tx.vout[k];
-                uint160 hashBytes;
+                CTxDestination hashBytes;
 				int addressType;
 
 				if(DecodeAddressHash(out.scriptPubKey, hashBytes, addressType))
@@ -1688,7 +1688,7 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
                 if (fAddressIndex) {
                     const Coin &coin = view.AccessCoin(tx.vin[j].prevout);
                     const CTxOut &prevout = coin.out;
-                    uint160 hashBytes;
+                    CTxDestination hashBytes;
 					int addressType;
 
 					if(DecodeAddressHash(prevout.scriptPubKey, hashBytes, addressType))
@@ -2058,7 +2058,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                     const CTxIn input = tx.vin[j];
                     const Coin& coin = view.AccessCoin(tx.vin[j].prevout);
                     const CTxOut &prevout = coin.out;
-                    uint160 hashBytes;
+                    CTxDestination hashBytes;
                     int addressType;
                     if(DecodeAddressHash(prevout.scriptPubKey, hashBytes, addressType))
 					{
@@ -2104,7 +2104,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
 		if (fAddressIndex) {
             for (unsigned int k = 0; k < tx.vout.size(); k++) {
                 const CTxOut &out = tx.vout[k];
-                uint160 hashBytes;
+                CTxDestination hashBytes;
 				int addressType;
 				if(DecodeAddressHash(out.scriptPubKey, hashBytes, addressType))
 				{

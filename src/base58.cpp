@@ -322,11 +322,10 @@ CTxDestination DecodeDestination(const std::string& str, const CChainParams& par
     return CNoDestination();
 }
 
-bool DecodeAddrDest(const std::string& str, const CChainParams& params, uint160& hash, int & type)
+bool DecodeAddrDest(const std::string& str, const CChainParams& params, CTxDestination& dest, int & type)
 {
     std::vector<unsigned char> data;
-    //uint160 hash;
-	type = 0;
+    uint160 hash;
     if (DecodeBase58Check(str, data)) {
         // base58-encoded Bitcoin addresses.
         // Public-key-hash-addresses have version 0 (or 111 testnet).
@@ -334,19 +333,64 @@ bool DecodeAddrDest(const std::string& str, const CChainParams& params, uint160&
         const std::vector<unsigned char>& pubkey_prefix = params.Base58Prefix(CChainParams::PUBKEY_ADDRESS);
         if (data.size() == hash.size() + pubkey_prefix.size() && std::equal(pubkey_prefix.begin(), pubkey_prefix.end(), data.begin())) {
             std::copy(data.begin() + pubkey_prefix.size(), data.end(), hash.begin());
-			type = 1;
-            return true;
+            dest = CKeyID(hash);
+			type = (int)TX_PUBKEYHASH;
+			return true;
         }
         // Script-hash-addresses have version 5 (or 196 testnet).
         // The data vector contains RIPEMD160(SHA256(cscript)), where cscript is the serialized redemption script.
         const std::vector<unsigned char>& script_prefix = params.Base58Prefix(CChainParams::SCRIPT_ADDRESS);
         if (data.size() == hash.size() + script_prefix.size() && std::equal(script_prefix.begin(), script_prefix.end(), data.begin())) {
             std::copy(data.begin() + script_prefix.size(), data.end(), hash.begin());
-            //dest = CScriptID(hash);
-			type = 2;
+            dest = CScriptID(hash);
+			type = (int)TX_SCRIPTHASH;
 			return true;
         }
     }
+    data.clear();
+    auto bech = bech32::Decode(str);
+    if (bech.second.size() > 0 && bech.first == params.Bech32HRP()) {
+        // Bech32 decoding
+        int version = bech.second[0]; // The first 5 bit symbol is the witness version (0-16)
+        // The rest of the symbols are converted witness program bytes.
+        if (ConvertBits<5, 8, false>(data, bech.second.begin() + 1, bech.second.end())) {
+            if (version == 0) {
+                {
+                    WitnessV0KeyHash keyid;
+                    if (data.size() == keyid.size()) {
+                        std::copy(data.begin(), data.end(), keyid.begin());
+                        dest = keyid;
+						type = (int)TX_WITNESS_V0_KEYHASH;
+						return true;
+                    }
+                }
+                {
+                    WitnessV0ScriptHash scriptid;
+                    if (data.size() == scriptid.size()) {
+                        std::copy(data.begin(), data.end(), scriptid.begin());
+                        dest = scriptid;
+						type = (int)TX_WITNESS_V0_SCRIPTHASH;
+						return true;
+                    }
+                }
+                return CNoDestination();
+            }
+            if (version > 16 || data.size() < 2 || data.size() > 40) {
+                dest = CNoDestination();
+				type = (int)TX_NONSTANDARD;
+				return false;
+            }
+            WitnessUnknown unk;
+            unk.version = version;
+            std::copy(data.begin(), data.end(), unk.program);
+            unk.length = data.size();
+            dest = unk;
+			type = (int)TX_WITNESS_UNKNOWN;
+			return true;
+        }
+    }
+    dest = CNoDestination();
+	type = (int)TX_NONSTANDARD;
 	return false;
 }
 
@@ -395,7 +439,7 @@ CTxDestination DecodeDestination(const std::string& str)
     return DecodeDestination(str, Params());
 }
 
-bool DecodeAddrDest(const std::string& str, uint160& hash, int & type)
+bool DecodeAddrDest(const std::string& str, CTxDestination& hash, int & type)
 {
 	return DecodeAddrDest(str, Params(), hash, type);
 }
