@@ -46,7 +46,7 @@ struct CSpentIndexValue {
     int blockHeight;
     CAmount satoshis;
     int addressType;
-    /*uint160*/CTxDestination addressHash;
+    CTxDestination addressHash;
 
     ADD_SERIALIZE_METHODS;
 
