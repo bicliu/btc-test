@@ -175,6 +175,7 @@ CScript GetScriptForRawPubKey(const CPubKey& pubkey);
 /** Generate a multisig script. */
 CScript GetScriptForMultisig(int nRequired, const std::vector<CPubKey>& keys);
 
+bool GetHashByDestination(uint160 & addrHashin, uint256 & vitHashin, int & typein, const CTxDestination& dest);
 bool GetAddressHashByScript(const CScript& scriptPubKey, uint160& addrhash, int& addrType, uint256& vithash);
 
 /**
