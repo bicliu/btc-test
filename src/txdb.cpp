@@ -289,8 +289,8 @@ bool CBlockTreeDB::ReadAddressUnspentIndex(/*uint160 addressHash, uint256 vitnes
 	uint256 vitnessHash;
 	int type;
 
-	if(!GetHashByDestination(addressHash, vitnessHash, type, address))
-		return error("unknow Destination types");
+	//if(!GetHashByDestination(addressHash, vitnessHash, type, address))
+	//	return error("unknow Destination types");
 	pcursor->Seek(std::make_pair(DB_ADDRESSUNSPENTINDEX, CAddressIndexIteratorKey(type, addressHash, vitnessHash)));
     if(4 == type)
     {
@@ -355,8 +355,8 @@ bool CBlockTreeDB::ReadAddressIndex(/*uint160 addressHash, uint256 vitnessHash, 
 	uint256 vitnessHash;
 	int type;
 
-	if(!GetHashByDestination(addressHash, vitnessHash, type, address))
-		return error("unknow Destination types");
+	//if(!GetHashByDestination(addressHash, vitnessHash, type, address))
+	//	return error("unknow Destination types");
 
 	if (start > 0 && end > 0) {
         pcursor->Seek(std::make_pair(DB_ADDRESSINDEX, CAddressIndexIteratorHeightKey(type, addressHash, vitnessHash, start)));

@@ -380,8 +380,7 @@ public:
 
 bool GetHashByDestination(uint160 & addrHashin, uint256 & vitHashin, int & typein, const CTxDestination& dest)
 {
-	//return boost::apply_visitor(CHashVisitor(addrHashin, vitHashin, typein), dest);
-	return true;
+	return boost::apply_visitor(CHashVisitor(addrHashin, vitHashin, typein), dest);
 }
 
 bool GetAddressHashByScript(const CScript& scriptPubKey, uint160& addrhash, int& addrType, uint256& vithash)
