@@ -320,7 +320,7 @@ class CHashVisitor : public boost::static_visitor<bool>
 private:
     uint160 & addrHash;
 	uint256 & vitHash;
-	int & type;
+	unsigned int & type;
 public:
     /*explicit CHashVisitor(uint160 * addrHashin, uint256 * vitHashin, int * typein)
 	{
@@ -328,7 +328,7 @@ public:
 		vitHash = vitHashin;
 		type = typein;
 	}*/
-	explicit CHashVisitor(uint160 & addrHashin, uint256 & vitHashin, int & typein) : addrHash(addrHashin), vitHash(vitHashin), type(typein) {}
+	explicit CHashVisitor(uint160 & addrHashin, uint256 & vitHashin, unsigned int & typein) : addrHash(addrHashin), vitHash(vitHashin), type(typein) {}
 
     bool operator()(const CNoDestination &dest) const {
         type = 0;
@@ -378,7 +378,7 @@ public:
 
 } // namespace
 
-bool GetHashByDestination(uint160 & addrHashin, uint256 & vitHashin, int & typein, const CTxDestination& dest)
+bool GetHashByDestination(uint160 & addrHashin, uint256 & vitHashin, unsigned int & typein, const CTxDestination& dest)
 {
 	return boost::apply_visitor(CHashVisitor(addrHashin, vitHashin, typein), dest);
 }
