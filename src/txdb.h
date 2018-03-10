@@ -11,6 +11,7 @@
 #include <chain.h>
 
 #include "spentindex.h"
+#include <script/standard.h>
 
 #include <map>
 #include <string>

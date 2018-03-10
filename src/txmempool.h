@@ -23,6 +23,7 @@
 
 #include "addressindex.h"
 #include "spentindex.h"
+#include <script/standard.h>
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/hashed_index.hpp>
