@@ -390,9 +390,9 @@ bool GetAddressHashByScript(const CScript& scriptPubKey, uint160& addrhash, int&
 	{
 		return GetHashByDestination(addrhash, vithash, addrType, addressRet);
 	}
-	type = 0;
-	addrHash.SetNull();
-	vitHash.SetNull();
+	addrType = 0;
+	addrhash.SetNull();
+	vithash.SetNull();
     return false;
 }
 
