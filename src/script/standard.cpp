@@ -337,12 +337,12 @@ public:
         return false;
     }
 
-    /*bool operator()(const CKeyID &keyID) const {
+    bool operator()(const CKeyID &keyID) const {
         type = 1;
 		addrHash = keyID;
 		vitHash.SetNull();
         return true;
-    }*/
+    }
 
     bool operator()(const CScriptID &scriptID) const {
         type = 2;
