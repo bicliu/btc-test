@@ -322,7 +322,7 @@ private:
 	uint256 & vitHash;
 	int & type;
 public:
-    explicit CScriptVisitor(uint160 & addrHashin, uint256 & vitHashin, int & typein)
+    explicit CHashVisitor(uint160 & addrHashin, uint256 & vitHashin, int & typein)
 	{
 		addrHash = addrHashin;
 		vitHash = vitHashin;
