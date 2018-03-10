@@ -456,11 +456,12 @@ bool CTxMemPool::getAddressIndex(std::vector<CTxDestination> &addresses,
                                  std::vector<std::pair<CMempoolAddressDeltaKey, CMempoolAddressDelta> > &results)
 {
     LOCK(cs);
-    for (std::vector<CTxDestination>::iterator it = addresses.begin(); it != addresses.end(); it++) {
+    //for (std::vector<CTxDestination>::iterator it = addresses.begin(); it != addresses.end(); it++) {
+	for (const CTxDestination& addr : addresses) {
 		int type;
 		uint160 addrhash;
 		uint256 vithash;
-		if(!GetHashByDestination(addrhash, vithash, type, (*it)))
+		if(!GetHashByDestination(addrhash, vithash, type, addr))
 			continue;
 		
         addressDeltaMap::iterator ait;// = mapAddress.lower_bound(CMempoolAddressDeltaKey((*it).second, (*it).first));
