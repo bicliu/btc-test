@@ -490,7 +490,7 @@ bool getAddressesFromParams(const UniValue& params, std::vector<CTxDestination> 
         addresses.push_back(std::make_pair(hashBytes, type));*/
         CTxDestination dest;
         dest = DecodeDestination(params[0].get_str());
-		if(CNoDestination() == dest)
+		if(boost::get<CNoDestination>(&dest))
 		{
 			throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
 		}
@@ -515,7 +515,7 @@ bool getAddressesFromParams(const UniValue& params, std::vector<CTxDestination> 
             addresses.push_back(std::make_pair(hashBytes, type));*/
             CTxDestination dest;
         	dest = DecodeDestination(it->get_str());
-			if(CNoDestination() == dest)
+			if(boost::get<CNoDestination>(&dest))
 			{
 				throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
 			}

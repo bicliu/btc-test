@@ -1644,9 +1644,9 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
 				if(GetAddressHashByScript(out.scriptPubKey, hashBytes, addressType, vitHash))
 				{
 					// undo receiving activity
-					addressIndex.push_back(std::make_pair(CAddressIndexKey(addressType, hashBytes, pindex->nHeight, i, hash, k, false), out.nValue));
+					addressIndex.push_back(std::make_pair(CAddressIndexKey(addressType, hashBytes, vitHash, pindex->nHeight, i, hash, k, false), out.nValue));
 					// undo unspent index
-					addressUnspentIndex.push_back(std::make_pair(CAddressUnspentKey(addressType, hashBytes, hash, k), CAddressUnspentValue()));
+					addressUnspentIndex.push_back(std::make_pair(CAddressUnspentKey(addressType, hashBytes, vitHash, hash, k), CAddressUnspentValue()));
 				}
             }
 
@@ -1696,9 +1696,9 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
 					if(GetAddressHashByScript(prevout.scriptPubKey, hashBytes, addressType, vitHash))
 					{
 						// undo spending activity
-						addressIndex.push_back(std::make_pair(CAddressIndexKey(addressType, hashBytes, pindex->nHeight, i, hash, j, true), prevout.nValue * -1));
+						addressIndex.push_back(std::make_pair(CAddressIndexKey(addressType, hashBytes, vitHash, pindex->nHeight, i, hash, j, true), prevout.nValue * -1));
 						// restore unspent index
-						addressUnspentIndex.push_back(std::make_pair(CAddressUnspentKey(addressType, hashBytes, input.prevout.hash, input.prevout.n), CAddressUnspentValue(prevout.nValue, prevout.scriptPubKey, undoHeight)));
+						addressUnspentIndex.push_back(std::make_pair(CAddressUnspentKey(addressType, hashBytes, vitHash, input.prevout.hash, input.prevout.n), CAddressUnspentValue(prevout.nValue, prevout.scriptPubKey, undoHeight)));
 					}
                 }
             }
@@ -2067,10 +2067,10 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
 					{
 						if(fAddressIndex && addressType > 0){
                         	// record spending activity
-                        	addressIndex.push_back(std::make_pair(CAddressIndexKey(addressType, hashBytes, pindex->nHeight, i, txhash, j, true), prevout.nValue * -1));
+                        	addressIndex.push_back(std::make_pair(CAddressIndexKey(addressType, hashBytes, vitHash, pindex->nHeight, i, txhash, j, true), prevout.nValue * -1));
 
                         	// remove address from unspent index
-                        	addressUnspentIndex.push_back(std::make_pair(CAddressUnspentKey(addressType, hashBytes, input.prevout.hash, input.prevout.n), CAddressUnspentValue()));
+                        	addressUnspentIndex.push_back(std::make_pair(CAddressUnspentKey(addressType, hashBytes, vitHash, input.prevout.hash, input.prevout.n), CAddressUnspentValue()));
                     	}
 					}
 
@@ -2113,10 +2113,10 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
 				if(GetAddressHashByScript(out.scriptPubKey, hashBytes, addressType, vitHash))
 				{
 					// record receiving activity
-                    addressIndex.push_back(std::make_pair(CAddressIndexKey(addressType, hashBytes, pindex->nHeight, i, txhash, k, false), out.nValue));
+                    addressIndex.push_back(std::make_pair(CAddressIndexKey(addressType, hashBytes, vitHash, pindex->nHeight, i, txhash, k, false), out.nValue));
 
                     // record unspent output
-                    addressUnspentIndex.push_back(std::make_pair(CAddressUnspentKey(addressType, hashBytes, txhash, k), CAddressUnspentValue(out.nValue, out.scriptPubKey, pindex->nHeight)));
+                    addressUnspentIndex.push_back(std::make_pair(CAddressUnspentKey(addressType, hashBytes, vitHash, txhash, k), CAddressUnspentValue(out.nValue, out.scriptPubKey, pindex->nHeight)));
 				}
             }
         }
