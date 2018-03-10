@@ -9,6 +9,7 @@
 #include "uint256.h"
 #include "amount.h"
 #include "script/script.h"
+#include <script/standard.h>
 
 struct CSpentIndexKey {
     uint256 txid;
