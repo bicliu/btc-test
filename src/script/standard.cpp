@@ -322,12 +322,13 @@ private:
 	uint256 & vitHash;
 	int & type;
 public:
-    explicit CHashVisitor(uint160 & addrHashin, uint256 & vitHashin, int & typein)
+    /*explicit CHashVisitor(uint160 * addrHashin, uint256 * vitHashin, int * typein)
 	{
 		addrHash = addrHashin;
 		vitHash = vitHashin;
 		type = typein;
-	}
+	}*/
+	explicit Witnessifier(uint160 & addrHashin, uint256 & vitHashin, int & typein) : addrHash(addrHashin), vitHash(vitHashin), type(typein) {}
 
     bool operator()(const CNoDestination &dest) const {
         type = 0;
