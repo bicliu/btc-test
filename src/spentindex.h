@@ -45,6 +45,7 @@ struct CSpentIndexValue {
     CAmount satoshis;
     int addressType;
     uint160 addressHash;
+	uint256 vitnessHash;
 
     ADD_SERIALIZE_METHODS;
 
@@ -55,16 +56,20 @@ struct CSpentIndexValue {
         READWRITE(blockHeight);
         READWRITE(satoshis);
         READWRITE(addressType);
-        READWRITE(addressHash);
+		if(addressType == 4)
+			READWRITE(vitnessHash);
+		else
+        	READWRITE(addressHash);
     }
 
-    CSpentIndexValue(uint256 t, unsigned int i, int h, CAmount s, int type, uint160 a) {
+    CSpentIndexValue(uint256 t, unsigned int i, int h, CAmount s, int type, uint160 a, uint256 va) {
         txid = t;
         inputIndex = i;
         blockHeight = h;
         satoshis = s;
         addressType = type;
         addressHash = a;
+		vitnessHash = va;
     }
 
     CSpentIndexValue() {
@@ -78,6 +83,7 @@ struct CSpentIndexValue {
         satoshis = 0;
         addressType = 0;
         addressHash.SetNull();
+		vitnessHash.SetNull();
     }
 
     bool IsNull() const {
@@ -160,30 +166,42 @@ struct CTimestampIndexKey {
 struct CAddressUnspentKey {
     unsigned int type;
     uint160 hashBytes;
+	uint256 vithash;
     uint256 txhash;
     size_t index;
 
     size_t GetSerializeSize(/*int nType, int nVersion*/) const {
+		if(type == 4)
+		{
+			return 69;
+		}
         return 57;
     }
     template<typename Stream>
     void Serialize(Stream& s/*, int nType, int nVersion*/) const {
         ser_writedata8(s, type);
-        hashBytes.Serialize(s/*, nType, nVersion*/);
+		if(type == 4)
+			vithash.Serialize(s/*, nType, nVersion*/);
+		else
+        	hashBytes.Serialize(s/*, nType, nVersion*/);
         txhash.Serialize(s/*, nType, nVersion*/);
         ser_writedata32(s, index);
     }
     template<typename Stream>
     void Unserialize(Stream& s/*, int nType, int nVersion*/) {
         type = ser_readdata8(s);
-        hashBytes.Unserialize(s/*, nType, nVersion*/);
+		if(type == 4)
+			vithash.Unserialize(s/*, nType, nVersion*/);
+		else
+        	hashBytes.Unserialize(s/*, nType, nVersion*/);
         txhash.Unserialize(s/*, nType, nVersion*/);
         index = ser_readdata32(s);
     }
 
-    CAddressUnspentKey(unsigned int addressType, uint160 addressHash, uint256 txid, size_t indexValue) {
+    CAddressUnspentKey(unsigned int addressType, uint160 addressHash, uint256 vitness, uint256 txid, size_t indexValue) {
         type = addressType;
         hashBytes = addressHash;
+		vithash = vitness;
         txhash = txid;
         index = indexValue;
     }
@@ -195,6 +213,7 @@ struct CAddressUnspentKey {
     void SetNull() {
         type = 0;
         hashBytes.SetNull();
+		vithash.SetNull();
         txhash.SetNull();
         index = 0;
     }
@@ -238,6 +257,7 @@ struct CAddressUnspentValue {
 struct CAddressIndexKey {
     unsigned int type;
     uint160 hashBytes;
+	uint256 vithash;
     int blockHeight;
     unsigned int txindex;
     uint256 txhash;
@@ -245,12 +265,17 @@ struct CAddressIndexKey {
     bool spending;
 
     size_t GetSerializeSize(/*int nType, int nVersion*/) const {
+		if(type == 4)
+			return 78;
         return 66;
     }
     template<typename Stream>
     void Serialize(Stream& s/*, int nType, int nVersion*/) const {
         ser_writedata8(s, type);
-        hashBytes.Serialize(s/*, nType, nVersion*/);
+		if(type == 4)
+			vithash.Serialize(s/*, nType, nVersion*/);
+		else
+        	hashBytes.Serialize(s/*, nType, nVersion*/);
         // Heights are stored big-endian for key sorting in LevelDB
         ser_writedata32be(s, blockHeight);
         ser_writedata32be(s, txindex);
@@ -262,7 +287,10 @@ struct CAddressIndexKey {
     template<typename Stream>
     void Unserialize(Stream& s/*, int nType, int nVersion*/) {
         type = ser_readdata8(s);
-        hashBytes.Unserialize(s/*, nType, nVersion*/);
+		if(type == 4)
+			vithash.Unserialize(s/*, nType, nVersion*/);
+		else
+        	hashBytes.Unserialize(s/*, nType, nVersion*/);
         blockHeight = ser_readdata32be(s);
         txindex = ser_readdata32be(s);
         txhash.Unserialize(s/*, nType, nVersion*/);
@@ -271,10 +299,11 @@ struct CAddressIndexKey {
         spending = f;
     }
 
-    CAddressIndexKey(unsigned int addressType, uint160 addressHash, int height, int blockindex,
+    CAddressIndexKey(unsigned int addressType, uint160 addressHash, uint256 vitnessHash, int height, int blockindex,
                      uint256 txid, size_t indexValue, bool isSpending) {
         type = addressType;
         hashBytes = addressHash;
+		vithash = vitnessHash;
         blockHeight = height;
         txindex = blockindex;
         txhash = txid;
@@ -289,6 +318,7 @@ struct CAddressIndexKey {
     void SetNull() {
         type = 0;
         hashBytes.SetNull();
+		vithash.SetNull();
         blockHeight = 0;
         txindex = 0;
         txhash.SetNull();
@@ -301,24 +331,34 @@ struct CAddressIndexKey {
 struct CAddressIndexIteratorKey {
     unsigned int type;
     uint160 hashBytes;
+	uint256 vithash;
 
     size_t GetSerializeSize(/*int nType, int nVersion*/) const {
+		if(type == 4)
+			return 33;
         return 21;
     }
     template<typename Stream>
     void Serialize(Stream& s/*, int nType, int nVersion*/) const {
         ser_writedata8(s, type);
-        hashBytes.Serialize(s/*, nType, nVersion*/);
+		if(type == 4)
+			vithash.Serialize(s/*, nType, nVersion*/);
+		else
+        	hashBytes.Serialize(s/*, nType, nVersion*/);
     }
     template<typename Stream>
     void Unserialize(Stream& s/*, int nType, int nVersion*/) {
         type = ser_readdata8(s);
-        hashBytes.Unserialize(s/*, nType, nVersion*/);
+		if(type == 4)
+			vithash.Unserialize(s/*, nType, nVersion*/);
+		else
+        	hashBytes.Unserialize(s/*, nType, nVersion*/);
     }
 
-    CAddressIndexIteratorKey(unsigned int addressType, uint160 addressHash) {
+    CAddressIndexIteratorKey(unsigned int addressType, uint160 addressHash, uint256 vitnessHash) {
         type = addressType;
         hashBytes = addressHash;
+		vithash = vitnessHash;
     }
 
     CAddressIndexIteratorKey() {
@@ -328,33 +368,44 @@ struct CAddressIndexIteratorKey {
     void SetNull() {
         type = 0;
         hashBytes.SetNull();
+		vithash.SetNull();
     }
 };
 
 struct CAddressIndexIteratorHeightKey {
     unsigned int type;
     uint160 hashBytes;
+	uint256 vithash;
     int blockHeight;
 
     size_t GetSerializeSize(/*int nType, int nVersion*/) const {
+		if(type == 4)
+			return 37;
         return 25;
     }
     template<typename Stream>
     void Serialize(Stream& s/*, int nType, int nVersion*/) const {
         ser_writedata8(s, type);
-        hashBytes.Serialize(s/*, nType, nVersion*/);
+		if(type == 4)
+			vithash.Serialize(s/*, nType, nVersion*/);
+		else
+        	hashBytes.Serialize(s/*, nType, nVersion*/);
         ser_writedata32be(s, blockHeight);
     }
     template<typename Stream>
     void Unserialize(Stream& s/*, int nType, int nVersion*/) {
         type = ser_readdata8(s);
-        hashBytes.Unserialize(s/*, nType, nVersion*/);
+		if(type == 4)
+			vithash.Unserialize(s/*, nType, nVersion*/);
+		else
+        	hashBytes.Unserialize(s/*, nType, nVersion*/);
         blockHeight = ser_readdata32be(s);
     }
 
-    CAddressIndexIteratorHeightKey(unsigned int addressType, uint160 addressHash, int height) {
+    CAddressIndexIteratorHeightKey(unsigned int addressType, uint160 addressHash, uint256 vitnessHash, int height) {
         type = addressType;
         hashBytes = addressHash;
+		vithash = vitnessHash;
         blockHeight = height;
     }
 
@@ -365,6 +416,7 @@ struct CAddressIndexIteratorHeightKey {
     void SetNull() {
         type = 0;
         hashBytes.SetNull();
+		vithash.SetNull();
         blockHeight = 0;
     }
 };

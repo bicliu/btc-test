@@ -281,26 +281,55 @@ bool CBlockTreeDB::UpdateAddressUnspentIndex(const std::vector<std::pair<CAddres
     return WriteBatch(batch);
 }
 
-bool CBlockTreeDB::ReadAddressUnspentIndex(uint160 addressHash, int type,
+bool CBlockTreeDB::ReadAddressUnspentIndex(/*uint160 addressHash, uint256 vitnessHash, int type,*/CTxDestination address,
                                            std::vector<std::pair<CAddressUnspentKey, CAddressUnspentValue> > &unspentOutputs) {
 
     boost::scoped_ptr<CDBIterator> pcursor(NewIterator());
+	uint160 addressHash;
+	uint256 vitnessHash;
+	int type;
 
-    pcursor->Seek(std::make_pair(DB_ADDRESSUNSPENTINDEX, CAddressIndexIteratorKey(type, addressHash)));
+	if(!GetHashByDestination(addressHash, vitnessHash, type, address))
+		return error("unknow Destination types");
 
-    while (pcursor->Valid()) {
-        boost::this_thread::interruption_point();
-        std::pair<char,CAddressUnspentKey> key;
-        if (pcursor->GetKey(key) && key.first == DB_ADDRESSUNSPENTINDEX && key.second.hashBytes == addressHash) {
-            CAddressUnspentValue nValue;
-            if (pcursor->GetValue(nValue)) {
-                unspentOutputs.push_back(std::make_pair(key.second, nValue));
-                pcursor->Next();
+    if(4 == type)
+    {
+        pcursor->Seek(std::make_pair(DB_ADDRESSUNSPENTINDEX, CAddressIndexIteratorKey(type, vitnessHash)));
+
+        while (pcursor->Valid()) {
+            boost::this_thread::interruption_point();
+            std::pair<char,CAddressUnspentKey> key;
+            if (pcursor->GetKey(key) && key.first == DB_ADDRESSUNSPENTINDEX && key.second.vithash == vitnessHash) {
+                CAddressUnspentValue nValue;
+                if (pcursor->GetValue(nValue)) {
+                    unspentOutputs.push_back(std::make_pair(key.second, nValue));
+                    pcursor->Next();
+                } else {
+                    return error("failed to get address unspent value");
+                }
             } else {
-                return error("failed to get address unspent value");
+                break;
             }
-        } else {
-            break;
+        }
+    }
+    else
+    {
+        pcursor->Seek(std::make_pair(DB_ADDRESSUNSPENTINDEX, CAddressIndexIteratorKey(type, addressHash)));
+
+        while (pcursor->Valid()) {
+            boost::this_thread::interruption_point();
+            std::pair<char,CAddressUnspentKey> key;
+            if (pcursor->GetKey(key) && key.first == DB_ADDRESSUNSPENTINDEX && key.second.hashBytes == addressHash) {
+                CAddressUnspentValue nValue;
+                if (pcursor->GetValue(nValue)) {
+                    unspentOutputs.push_back(std::make_pair(key.second, nValue));
+                    pcursor->Next();
+                } else {
+                    return error("failed to get address unspent value");
+                }
+            } else {
+                break;
+            }
         }
     }
 
@@ -321,34 +350,70 @@ bool CBlockTreeDB::EraseAddressIndex(const std::vector<std::pair<CAddressIndexKe
     return WriteBatch(batch);
 }
 
-bool CBlockTreeDB::ReadAddressIndex(uint160 addressHash, int type,
+bool CBlockTreeDB::ReadAddressIndex(/*uint160 addressHash, uint256 vitnessHash, int type,*/CTxDestination address,
                                     std::vector<std::pair<CAddressIndexKey, CAmount> > &addressIndex,
                                     int start, int end) {
 
     boost::scoped_ptr<CDBIterator> pcursor(NewIterator());
+	uint160 addressHash;
+	uint256 vitnessHash;
+	int type;
 
-    if (start > 0 && end > 0) {
-        pcursor->Seek(std::make_pair(DB_ADDRESSINDEX, CAddressIndexIteratorHeightKey(type, addressHash, start)));
-    } else {
-        pcursor->Seek(std::make_pair(DB_ADDRESSINDEX, CAddressIndexIteratorKey(type, addressHash)));
-    }
+	if(!GetHashByDestination(addressHash, vitnessHash, type, address))
+		return error("unknow Destination types");
 
-    while (pcursor->Valid()) {
-        boost::this_thread::interruption_point();
-        std::pair<char,CAddressIndexKey> key;
-        if (pcursor->GetKey(key) && key.first == DB_ADDRESSINDEX && key.second.hashBytes == addressHash) {
-            if (end > 0 && key.second.blockHeight > end) {
+    if(4 == type)
+    {
+        if (start > 0 && end > 0) {
+            pcursor->Seek(std::make_pair(DB_ADDRESSINDEX, CAddressIndexIteratorHeightKey(type, vitnessHash, start)));
+        } else {
+            pcursor->Seek(std::make_pair(DB_ADDRESSINDEX, CAddressIndexIteratorKey(type, vitnessHash)));
+        }
+
+        while (pcursor->Valid()) {
+            boost::this_thread::interruption_point();
+            std::pair<char,CAddressIndexKey> key;
+            if (pcursor->GetKey(key) && key.first == DB_ADDRESSINDEX && key.second.vithash == vitnessHash) {
+                if (end > 0 && key.second.blockHeight > end) {
+                    break;
+                }
+                CAmount nValue;
+                if (pcursor->GetValue(nValue)) {
+                    addressIndex.push_back(std::make_pair(key.second, nValue));
+                    pcursor->Next();
+                } else {
+                    return error("failed to get address index value");
+                }
+            } else {
                 break;
             }
-            CAmount nValue;
-            if (pcursor->GetValue(nValue)) {
-                addressIndex.push_back(std::make_pair(key.second, nValue));
-                pcursor->Next();
-            } else {
-                return error("failed to get address index value");
-            }
+        }
+    }
+    else
+    {
+        if (start > 0 && end > 0) {
+            pcursor->Seek(std::make_pair(DB_ADDRESSINDEX, CAddressIndexIteratorHeightKey(type, addressHash, start)));
         } else {
-            break;
+            pcursor->Seek(std::make_pair(DB_ADDRESSINDEX, CAddressIndexIteratorKey(type, addressHash)));
+        }
+
+        while (pcursor->Valid()) {
+            boost::this_thread::interruption_point();
+            std::pair<char,CAddressIndexKey> key;
+            if (pcursor->GetKey(key) && key.first == DB_ADDRESSINDEX && key.second.hashBytes == addressHash) {
+                if (end > 0 && key.second.blockHeight > end) {
+                    break;
+                }
+                CAmount nValue;
+                if (pcursor->GetValue(nValue)) {
+                    addressIndex.push_back(std::make_pair(key.second, nValue));
+                    pcursor->Next();
+                } else {
+                    return error("failed to get address index value");
+                }
+            } else {
+                break;
+            }
         }
     }
 

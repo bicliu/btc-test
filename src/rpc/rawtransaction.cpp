@@ -76,6 +76,10 @@ void TxToUniv_add(const CTransaction& tx, const uint256& hashBlock, UniValue& en
                     in.push_back(Pair("address", EncodeDestination(CKeyID(spentInfo.addressHash))));
                 } else if (spentInfo.addressType == 2)  {
                     in.push_back(Pair("address", EncodeDestination(CScriptID(spentInfo.addressHash))));
+                } else if (spentInfo.addressType == 3)  {
+                    in.push_back(Pair("address", EncodeDestination(WitnessV0KeyHash(spentInfo.addressHash))));
+                } else if (spentInfo.addressType == 4)  {
+                    in.push_back(Pair("address", EncodeDestination(WitnessV0ScriptHash(spentInfo.vitnessHash))));
                 }
             }
         }

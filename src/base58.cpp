@@ -322,6 +322,7 @@ CTxDestination DecodeDestination(const std::string& str, const CChainParams& par
     return CNoDestination();
 }
 
+#if 0
 bool DecodeAddrDest(const std::string& str, const CChainParams& params, uint160& hash, int & type)
 {
     std::vector<unsigned char> data;
@@ -349,6 +350,7 @@ bool DecodeAddrDest(const std::string& str, const CChainParams& params, uint160&
     }
 	return false;
 }
+#endif
 
 } // namespace
 
@@ -394,11 +396,12 @@ CTxDestination DecodeDestination(const std::string& str)
 {
     return DecodeDestination(str, Params());
 }
-
+#if 0
 bool DecodeAddrDest(const std::string& str, uint160& hash, int & type)
 {
 	return DecodeAddrDest(str, Params(), hash, type);
 }
+#endif
 
 bool IsValidDestinationString(const std::string& str, const CChainParams& params)
 {

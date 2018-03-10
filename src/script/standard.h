@@ -175,7 +175,7 @@ CScript GetScriptForRawPubKey(const CPubKey& pubkey);
 /** Generate a multisig script. */
 CScript GetScriptForMultisig(int nRequired, const std::vector<CPubKey>& keys);
 
-bool DecodeAddressHash(const CScript& scriptPubKey, uint160& addrhash, int& addrType);
+bool GetAddressHashByScript(const CScript& scriptPubKey, uint160& addrhash, int& addrType, uint256& vithash);
 
 /**
  * Generate a pay-to-witness script for the given redeem script. If the redeem

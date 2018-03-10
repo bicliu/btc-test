@@ -1098,25 +1098,25 @@ bool GetSpentIndex(CSpentIndexKey &key, CSpentIndexValue &value)
     return true;
 }
 
-bool GetAddressIndex(uint160 addressHash, int type,
+bool GetAddressIndex(/*uint160 addressHash, uint256 vitnessHash, int type,*/CTxDestination address,
                      std::vector<std::pair<CAddressIndexKey, CAmount> > &addressIndex, int start, int end)
 {
     if (!fAddressIndex)
         return error("address index not enabled");
 
-    if (!pblocktree->ReadAddressIndex(addressHash, type, addressIndex, start, end))
+    if (!pblocktree->ReadAddressIndex(address, addressIndex, start, end))
         return error("unable to get txids for address");
 
     return true;
 }
 
-bool GetAddressUnspent(uint160 addressHash, int type,
+bool GetAddressUnspent(/*uint160 addressHash, uint256 vitnessHash, int type,*/CTxDestination address,
                        std::vector<std::pair<CAddressUnspentKey, CAddressUnspentValue> > &unspentOutputs)
 {
     if (!fAddressIndex)
         return error("address index not enabled");
 
-    if (!pblocktree->ReadAddressUnspentIndex(addressHash, type, unspentOutputs))
+    if (!pblocktree->ReadAddressUnspentIndex(address, unspentOutputs))
         return error("unable to get txids for address");
 
     return true;
@@ -1639,8 +1639,9 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
                 const CTxOut &out = tx.vout[k];
                 uint160 hashBytes;
 				int addressType;
+				uint256 vitHash;
 
-				if(DecodeAddressHash(out.scriptPubKey, hashBytes, addressType))
+				if(GetAddressHashByScript(out.scriptPubKey, hashBytes, addressType, vitHash))
 				{
 					// undo receiving activity
 					addressIndex.push_back(std::make_pair(CAddressIndexKey(addressType, hashBytes, pindex->nHeight, i, hash, k, false), out.nValue));
@@ -1690,8 +1691,9 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
                     const CTxOut &prevout = coin.out;
                     uint160 hashBytes;
 					int addressType;
+					uint256 vitHash;
 
-					if(DecodeAddressHash(prevout.scriptPubKey, hashBytes, addressType))
+					if(GetAddressHashByScript(prevout.scriptPubKey, hashBytes, addressType, vitHash))
 					{
 						// undo spending activity
 						addressIndex.push_back(std::make_pair(CAddressIndexKey(addressType, hashBytes, pindex->nHeight, i, hash, j, true), prevout.nValue * -1));
@@ -2060,7 +2062,8 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                     const CTxOut &prevout = coin.out;
                     uint160 hashBytes;
                     int addressType;
-                    if(DecodeAddressHash(prevout.scriptPubKey, hashBytes, addressType))
+					uint256 vitHash;
+                    if(GetAddressHashByScript(prevout.scriptPubKey, hashBytes, addressType, vitHash))
 					{
 						if(fAddressIndex && addressType > 0){
                         	// record spending activity
@@ -2074,7 +2077,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                     if (fSpentIndex) {
                         // add the spent index to determine the txid and input that spent an output
                         // and to find the amount and address from an input
-                        spentIndex.push_back(std::make_pair(CSpentIndexKey(input.prevout.hash, input.prevout.n), CSpentIndexValue(txhash, j, pindex->nHeight, prevout.nValue, addressType, hashBytes)));
+                        spentIndex.push_back(std::make_pair(CSpentIndexKey(input.prevout.hash, input.prevout.n), CSpentIndexValue(txhash, j, pindex->nHeight, prevout.nValue, addressType, hashBytes, vitHash)));
                     }
                 }
 
@@ -2106,7 +2109,8 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                 const CTxOut &out = tx.vout[k];
                 uint160 hashBytes;
 				int addressType;
-				if(DecodeAddressHash(out.scriptPubKey, hashBytes, addressType))
+				uint256 vitHash;
+				if(GetAddressHashByScript(out.scriptPubKey, hashBytes, addressType, vitHash))
 				{
 					// record receiving activity
                     addressIndex.push_back(std::make_pair(CAddressIndexKey(addressType, hashBytes, pindex->nHeight, i, txhash, k, false), out.nValue));

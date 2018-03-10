@@ -425,13 +425,14 @@ void CTxMemPool::addAddressIndex(const CTxMemPoolEntry &entry, const CCoinsViewC
     uint256 txhash = tx.GetHash();
 	uint160 hashBytes;
 	int addressType;
+	uint256 vitHash;
     for (unsigned int j = 0; j < tx.vin.size(); j++) {
         const CTxIn input = tx.vin[j];
         const Coin& coin = view.AccessCoin(input.prevout);
         const CTxOut &prevout = coin.out;
-        if(DecodeAddressHash(prevout.scriptPubKey, hashBytes, addressType))
+        if(GetAddressHashByScript(prevout.scriptPubKey, hashBytes, addressType, vitHash))
         {
-        	CMempoolAddressDeltaKey key(addressType, hashBytes, txhash, j, 1);
+        	CMempoolAddressDeltaKey key(addressType, hashBytes, vitHash, txhash, j, 1);
             CMempoolAddressDelta delta(entry.GetTime(), prevout.nValue * -1, input.prevout.hash, input.prevout.n);
             mapAddress.insert(std::make_pair(key, delta));
             inserted.push_back(key);
@@ -440,9 +441,9 @@ void CTxMemPool::addAddressIndex(const CTxMemPoolEntry &entry, const CCoinsViewC
 
     for (unsigned int k = 0; k < tx.vout.size(); k++) {
         const CTxOut &out = tx.vout[k];
-        if(DecodeAddressHash(out.scriptPubKey, hashBytes, addressType))
+        if(GetAddressHashByScript(out.scriptPubKey, hashBytes, addressType, vitHash))
         {
-        	CMempoolAddressDeltaKey key(addressType, hashBytes, txhash, k, 0);
+        	CMempoolAddressDeltaKey key(addressType, hashBytes, vitHash, txhash, k, 0);
             mapAddress.insert(std::make_pair(key, CMempoolAddressDelta(entry.GetTime(), out.nValue)));
             inserted.push_back(key);
         }
@@ -451,13 +452,33 @@ void CTxMemPool::addAddressIndex(const CTxMemPoolEntry &entry, const CCoinsViewC
     mapAddressInserted.insert(std::make_pair(txhash, inserted));
 }
 
-bool CTxMemPool::getAddressIndex(std::vector<std::pair<uint160, int> > &addresses,
+bool CTxMemPool::getAddressIndex(std::vector<CTxDestination> &addresses,
                                  std::vector<std::pair<CMempoolAddressDeltaKey, CMempoolAddressDelta> > &results)
 {
     LOCK(cs);
-    for (std::vector<std::pair<uint160, int> >::iterator it = addresses.begin(); it != addresses.end(); it++) {
-        addressDeltaMap::iterator ait = mapAddress.lower_bound(CMempoolAddressDeltaKey((*it).second, (*it).first));
-        while (ait != mapAddress.end() && (*ait).first.addressBytes == (*it).first && (*ait).first.type == (*it).second) {
+    for (std::vector<CTxDestination>::iterator it = addresses.begin(); it != addresses.end(); it++) {
+		int type;
+		uint160 addrhash;
+		uint256 vithash;
+		if(!GetHashByDestination(addrhash, vithash, type, (*it)))
+			continue;
+		
+        addressDeltaMap::iterator ait;// = mapAddress.lower_bound(CMempoolAddressDeltaKey((*it).second, (*it).first));
+		if(4 == type)
+			ait = mapAddress.lower_bound(CMempoolAddressDeltaKey(type, vithash));
+		else
+			ait = mapAddress.lower_bound(CMempoolAddressDeltaKey(type, addrhash));
+        while (ait != mapAddress.end() /*&& (*ait).first.addressBytes == (*it).first*/ && (*ait).first.type == type) {
+			if(4 == type)
+			{
+				if((*ait).first.vithash != vithash)
+					break;
+			}
+			else
+			{
+				if((*ait).first.addressBytes != addrhash)
+					break;
+			}
             results.push_back(*ait);
             ait++;
         }
@@ -495,11 +516,12 @@ void CTxMemPool::addSpentIndex(const CTxMemPoolEntry &entry, const CCoinsViewCac
         const CTxOut &prevout = coin.out;
         uint160 addressHash;
         int addressType;
+		uint256 vitnessHash;
 
-		DecodeAddressHash(prevout.scriptPubKey, addressHash, addressType);
+		GetAddressHashByScript(prevout.scriptPubKey, addressHash, addressType, vitnessHash);
 
         CSpentIndexKey key = CSpentIndexKey(input.prevout.hash, input.prevout.n);
-        CSpentIndexValue value = CSpentIndexValue(txhash, j, -1, prevout.nValue, addressType, addressHash);
+        CSpentIndexValue value = CSpentIndexValue(txhash, j, -1, prevout.nValue, addressType, addressHash, vitnessHash);
 
         mapSpent.insert(std::make_pair(key, value));
         inserted.push_back(key);
