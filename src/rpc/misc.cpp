@@ -495,7 +495,7 @@ bool getAddressesFromParams(const UniValue& params, std::vector<CTxDestination> 
 			throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
 		}
 		CAddressIndexIteratorKey tmp;
-		GetHashByDestination(tmp.hashBytes, tmp.vithash, tmp.type, dest);
+		GetHashByDestination(tmp.hashBytes, tmp.vithash, (int)tmp.type, dest);
 		addresses.push_back(dest);
     } else if (params[0].isObject()) {
 
