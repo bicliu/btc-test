@@ -291,11 +291,9 @@ bool CBlockTreeDB::ReadAddressUnspentIndex(/*uint160 addressHash, uint256 vitnes
 
 	if(!GetHashByDestination(addressHash, vitnessHash, type, address))
 		return error("unknow Destination types");
-
+	pcursor->Seek(std::make_pair(DB_ADDRESSUNSPENTINDEX, CAddressIndexIteratorKey(type, addressHash, vitnessHash)));
     if(4 == type)
     {
-        pcursor->Seek(std::make_pair(DB_ADDRESSUNSPENTINDEX, CAddressIndexIteratorKey(type, vitnessHash)));
-
         while (pcursor->Valid()) {
             boost::this_thread::interruption_point();
             std::pair<char,CAddressUnspentKey> key;
@@ -314,8 +312,6 @@ bool CBlockTreeDB::ReadAddressUnspentIndex(/*uint160 addressHash, uint256 vitnes
     }
     else
     {
-        pcursor->Seek(std::make_pair(DB_ADDRESSUNSPENTINDEX, CAddressIndexIteratorKey(type, addressHash)));
-
         while (pcursor->Valid()) {
             boost::this_thread::interruption_point();
             std::pair<char,CAddressUnspentKey> key;
@@ -362,14 +358,13 @@ bool CBlockTreeDB::ReadAddressIndex(/*uint160 addressHash, uint256 vitnessHash, 
 	if(!GetHashByDestination(addressHash, vitnessHash, type, address))
 		return error("unknow Destination types");
 
+	if (start > 0 && end > 0) {
+        pcursor->Seek(std::make_pair(DB_ADDRESSINDEX, CAddressIndexIteratorHeightKey(type, addressHash, vitnessHash, start)));
+    } else {
+        pcursor->Seek(std::make_pair(DB_ADDRESSINDEX, CAddressIndexIteratorKey(type, addressHash, vitnessHash)));
+    }
     if(4 == type)
     {
-        if (start > 0 && end > 0) {
-            pcursor->Seek(std::make_pair(DB_ADDRESSINDEX, CAddressIndexIteratorHeightKey(type, vitnessHash, start)));
-        } else {
-            pcursor->Seek(std::make_pair(DB_ADDRESSINDEX, CAddressIndexIteratorKey(type, vitnessHash)));
-        }
-
         while (pcursor->Valid()) {
             boost::this_thread::interruption_point();
             std::pair<char,CAddressIndexKey> key;
@@ -391,12 +386,6 @@ bool CBlockTreeDB::ReadAddressIndex(/*uint160 addressHash, uint256 vitnessHash, 
     }
     else
     {
-        if (start > 0 && end > 0) {
-            pcursor->Seek(std::make_pair(DB_ADDRESSINDEX, CAddressIndexIteratorHeightKey(type, addressHash, start)));
-        } else {
-            pcursor->Seek(std::make_pair(DB_ADDRESSINDEX, CAddressIndexIteratorKey(type, addressHash)));
-        }
-
         while (pcursor->Valid()) {
             boost::this_thread::interruption_point();
             std::pair<char,CAddressIndexKey> key;
