@@ -281,7 +281,7 @@ bool CBlockTreeDB::UpdateAddressUnspentIndex(const std::vector<std::pair<CAddres
     return WriteBatch(batch);
 }
 
-bool CBlockTreeDB::ReadAddressUnspentIndex(/*uint160 addressHash, uint256 vitnessHash, int type,*/CTxDestination address,
+bool CBlockTreeDB::ReadAddressUnspentIndex(/*uint160 addressHash, uint256 vitnessHash, int type,*/const CTxDestination & address,
                                            std::vector<std::pair<CAddressUnspentKey, CAddressUnspentValue> > &unspentOutputs) {
 
     boost::scoped_ptr<CDBIterator> pcursor(NewIterator());
@@ -350,7 +350,7 @@ bool CBlockTreeDB::EraseAddressIndex(const std::vector<std::pair<CAddressIndexKe
     return WriteBatch(batch);
 }
 
-bool CBlockTreeDB::ReadAddressIndex(/*uint160 addressHash, uint256 vitnessHash, int type,*/CTxDestination address,
+bool CBlockTreeDB::ReadAddressIndex(/*uint160 addressHash, uint256 vitnessHash, int type,*/const CTxDestination & address,
                                     std::vector<std::pair<CAddressIndexKey, CAmount> > &addressIndex,
                                     int start, int end) {
 

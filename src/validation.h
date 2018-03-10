@@ -290,10 +290,10 @@ uint64_t CalculateCurrentUsage();
 
 bool GetTimestampIndex(const unsigned int &high, const unsigned int &low, std::vector<uint256> &hashes);
 bool GetSpentIndex(CSpentIndexKey &key, CSpentIndexValue &value);
-bool GetAddressIndex(/*uint160 addressHash, uint256 vitnessHash, int type,*/CTxDestination address,
+bool GetAddressIndex(/*uint160 addressHash, uint256 vitnessHash, int type,*/const CTxDestination & address,
                      std::vector<std::pair<CAddressIndexKey, CAmount> > &addressIndex,
                      int start = 0, int end = 0);
-bool GetAddressUnspent(/*uint160 addressHash, uint256 vitnessHash, int type,*/CTxDestination address,
+bool GetAddressUnspent(/*uint160 addressHash, uint256 vitnessHash, int type,*/const CTxDestination & address,
                        std::vector<std::pair<CAddressUnspentKey, CAddressUnspentValue> > &unspentOutputs);
 
 

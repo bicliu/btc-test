@@ -647,8 +647,8 @@ UniValue getaddressutxos(const JSONRPCRequest& request)
 
     std::vector<std::pair<CAddressUnspentKey, CAddressUnspentValue> > unspentOutputs;
 
-    for (std::vector<CTxDestination>::iterator it = addresses.begin(); it != addresses.end(); it++) {
-        if (!GetAddressUnspent((*it), unspentOutputs)) {
+    for (const CTxDestination& addr : addresses) {
+        if (!GetAddressUnspent(addr, unspentOutputs)) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "No information available for address");
         }
     }
@@ -731,13 +731,13 @@ UniValue getaddressdeltas(const JSONRPCRequest& request)
 
     std::vector<std::pair<CAddressIndexKey, CAmount> > addressIndex;
 
-    for (std::vector<CTxDestination>::iterator it = addresses.begin(); it != addresses.end(); it++) {
+    for (const CTxDestination& addr : addresses) {
         if (start > 0 && end > 0) {
-            if (!GetAddressIndex((*it), addressIndex, start, end)) {
+            if (!GetAddressIndex(addr, addressIndex, start, end)) {
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "No information available for address");
             }
         } else {
-            if (!GetAddressIndex((*it), addressIndex)) {
+            if (!GetAddressIndex(addr, addressIndex)) {
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "No information available for address");
             }
         }
@@ -796,8 +796,8 @@ UniValue getaddressbalance(const JSONRPCRequest& request)
 
     std::vector<std::pair<CAddressIndexKey, CAmount> > addressIndex;
 
-    for (std::vector<CTxDestination>::iterator it = addresses.begin(); it != addresses.end(); it++) {
-        if (!GetAddressIndex((*it), addressIndex)) {
+    for (const CTxDestination& addr : addresses) {
+        if (!GetAddressIndex(addr, addressIndex)) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "No information available for address");
         }
     }
@@ -865,13 +865,13 @@ UniValue getaddresstxids(const JSONRPCRequest& request)
 
     std::vector<std::pair<CAddressIndexKey, CAmount> > addressIndex;
 
-    for (std::vector<CTxDestination>::iterator it = addresses.begin(); it != addresses.end(); it++) {
+    for (const CTxDestination& addr : addresses) {
         if (start > 0 && end > 0) {
-            if (!GetAddressIndex((*it), addressIndex, start, end)) {
+            if (!GetAddressIndex(addr, addressIndex, start, end)) {
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "No information available for address");
             }
         } else {
-            if (!GetAddressIndex((*it), addressIndex)) {
+            if (!GetAddressIndex(addr, addressIndex)) {
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "No information available for address");
             }
         }
