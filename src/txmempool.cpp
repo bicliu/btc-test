@@ -424,7 +424,7 @@ void CTxMemPool::addAddressIndex(const CTxMemPoolEntry &entry, const CCoinsViewC
 
     uint256 txhash = tx.GetHash();
 	uint160 hashBytes;
-	int addressType;
+	unsigned int addressType;
 	uint256 vitHash;
     for (unsigned int j = 0; j < tx.vin.size(); j++) {
         const CTxIn input = tx.vin[j];
@@ -518,7 +518,7 @@ void CTxMemPool::addSpentIndex(const CTxMemPoolEntry &entry, const CCoinsViewCac
         const Coin& coin = view.AccessCoin(input.prevout);
         const CTxOut &prevout = coin.out;
         uint160 addressHash;
-        int addressType;
+        unsigned int addressType;
 		uint256 vitnessHash;
 
 		GetAddressHashByScript(prevout.scriptPubKey, addressHash, addressType, vitnessHash);

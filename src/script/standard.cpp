@@ -383,7 +383,7 @@ bool GetHashByDestination(uint160 & addrHashin, uint256 & vitHashin, unsigned in
 	return boost::apply_visitor(CHashVisitor(addrHashin, vitHashin, typein), dest);
 }
 
-bool GetAddressHashByScript(const CScript& scriptPubKey, uint160& addrhash, int& addrType, uint256& vithash)
+bool GetAddressHashByScript(const CScript& scriptPubKey, uint160& addrhash, unsigned int& addrType, uint256& vithash)
 {
 	CTxDestination addressRet;
 	if(ExtractDestination(scriptPubKey, addressRet))

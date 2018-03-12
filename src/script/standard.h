@@ -176,7 +176,7 @@ CScript GetScriptForRawPubKey(const CPubKey& pubkey);
 CScript GetScriptForMultisig(int nRequired, const std::vector<CPubKey>& keys);
 
 bool GetHashByDestination(uint160 & addrHashin, uint256 & vitHashin, unsigned int & typein, const CTxDestination& dest);
-bool GetAddressHashByScript(const CScript& scriptPubKey, uint160& addrhash, int& addrType, uint256& vithash);
+bool GetAddressHashByScript(const CScript& scriptPubKey, uint160& addrhash, unsigned int& addrType, uint256& vithash);
 
 /**
  * Generate a pay-to-witness script for the given redeem script. If the redeem

@@ -1638,7 +1638,7 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
             for (unsigned int k = tx.vout.size(); k-- > 0;) {
                 const CTxOut &out = tx.vout[k];
                 uint160 hashBytes;
-				int addressType;
+				unsigned int addressType;
 				uint256 vitHash;
 
 				if(GetAddressHashByScript(out.scriptPubKey, hashBytes, addressType, vitHash))
@@ -1690,7 +1690,7 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
                     const Coin &coin = view.AccessCoin(tx.vin[j].prevout);
                     const CTxOut &prevout = coin.out;
                     uint160 hashBytes;
-					int addressType;
+					unsigned int addressType;
 					uint256 vitHash;
 
 					if(GetAddressHashByScript(prevout.scriptPubKey, hashBytes, addressType, vitHash))
@@ -2061,7 +2061,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                     const Coin& coin = view.AccessCoin(tx.vin[j].prevout);
                     const CTxOut &prevout = coin.out;
                     uint160 hashBytes;
-                    int addressType;
+                    unsigned int addressType;
 					uint256 vitHash;
                     if(GetAddressHashByScript(prevout.scriptPubKey, hashBytes, addressType, vitHash))
 					{
@@ -2108,7 +2108,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             for (unsigned int k = 0; k < tx.vout.size(); k++) {
                 const CTxOut &out = tx.vout[k];
                 uint160 hashBytes;
-				int addressType;
+				unsigned int addressType;
 				uint256 vitHash;
 				if(GetAddressHashByScript(out.scriptPubKey, hashBytes, addressType, vitHash))
 				{
