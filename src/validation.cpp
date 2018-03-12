@@ -1104,7 +1104,7 @@ bool GetAddressIndex(/*uint160 addressHash, uint256 vitnessHash, int type,*/CTxD
     if (!fAddressIndex)
         return error("address index not enabled");
 
-    if (!pblocktree->ReadAddressIndex(address, addressIndex, start, end))
+    if (!pblocktree->ReadAddressIndex(*address, addressIndex, start, end))
         return error("unable to get txids for address");
 
     return true;
