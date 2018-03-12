@@ -1110,6 +1110,15 @@ bool GetAddressIndex(uint160 addressHash, int type,
     return true;
 }
 
+bool GetVitAddrIndex(CTxDestination dest,
+					std::vector<std::pair<CAddressIndexKey, CAmount> > &addressIndex, int start, int end)
+{
+	if (!fAddressIndex)
+        return error("address index not enabled");
+
+	return true;
+}
+
 bool GetAddressUnspent(uint160 addressHash, int type,
                        std::vector<std::pair<CAddressUnspentKey, CAddressUnspentValue> > &unspentOutputs)
 {

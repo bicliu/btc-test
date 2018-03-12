@@ -510,6 +510,35 @@ bool getAddressesFromParams(const UniValue& params, std::vector<std::pair<uint16
     return true;
 }
 
+bool getDestinationsFromParams(const UniValue& params, std::vector<CTxDestination> &destinations)
+{
+    if (params[0].isStr()) {
+		CTxDestination dest = DecodeDestination(params[0].get_str());
+		if (boost::get<CNoDestination>(&dest))
+        	throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
+        destinations.push_back(dest);
+    } else if (params[0].isObject()) {
+
+        UniValue addressValues = find_value(params[0].get_obj(), "addresses");
+        if (!addressValues.isArray()) {
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Addresses is expected to be an array");
+        }
+
+        std::vector<UniValue> values = addressValues.getValues();
+
+        for (std::vector<UniValue>::iterator it = values.begin(); it != values.end(); ++it) {
+			CTxDestination dest = DecodeDestination(it->get_str());
+			if (boost::get<CNoDestination>(&dest))
+        		throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
+        	destinations.push_back(dest);
+        }
+    } else {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
+    }
+
+    return true;
+}
+
 bool heightSort(std::pair<CAddressUnspentKey, CAddressUnspentValue> a,
                 std::pair<CAddressUnspentKey, CAddressUnspentValue> b) {
     return a.second.blockHeight < b.second.blockHeight;
@@ -771,10 +800,14 @@ UniValue getaddressbalance(const JSONRPCRequest& request)
         );
 
     std::vector<std::pair<uint160, int> > addresses;
+	std::vector<CTxDestination> destinations;
 
     if (!getAddressesFromParams(request.params, addresses)) {
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
     }
+	if(!getDestinationsFromParams(request.params, destinations)) {
+		throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
+	}
 
     std::vector<std::pair<CAddressIndexKey, CAmount> > addressIndex;
 
