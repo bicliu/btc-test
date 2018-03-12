@@ -267,32 +267,57 @@ bool ExtractDestinations(const CScript& scriptPubKey, txnouttype& typeRet, std::
     return true;
 }
 
-bool DecodeAddressHash(const CScript& scriptPubKey, uint160& addrhash, int& addrType)
+WitnessUnknown Hash2WitnessUnknown(const uint160 hash)
+{}
+
+uint160 WitnessUnknown2Hash(WitnessUnknown witaddr)
+{}
+
+bool DecodeAddressHash(const CScript& scriptPubKey, uint160& addrhash, int& addrType, uint256 vithash)
 {
 	std::vector<valtype> vSolutions;
-	txnouttype addressType;
+	txnouttype whichType;
 
-	if (Solver(scriptPubKey, addressType, vSolutions))
+	if (Solver(scriptPubKey, whichType, vSolutions))
 	{
 		/*PUBKEY_ADDRESS, ==1        SCRIPT_ADDRESS, ==2*/
-        if(addressType== TX_SCRIPTHASH )
+        if(whichType== TX_SCRIPTHASH )
         {
             addrType=2;
             addrhash=uint160(vSolutions[0]);
 			return true;
         }
-        if(addressType==TX_PUBKEYHASH )
+        else if(whichType==TX_PUBKEYHASH )
         {
             addrType=1;
             addrhash=uint160(vSolutions[0]);
 			return true;
         }
-        if(addressType== TX_PUBKEY)
+        else if(whichType== TX_PUBKEY)
         {
             addrType=1;
             addrhash= Hash160(vSolutions[0]);
 			return true;
         }
+		else if (whichType == TX_WITNESS_V0_KEYHASH) {
+        	//WitnessV0KeyHash hash;
+        	std::copy(vSolutions[0].begin(), vSolutions[0].end(), addrhash.begin());
+			addrType=3;
+        	return true;
+    	} else if (whichType == TX_WITNESS_V0_SCRIPTHASH) {
+        	//WitnessV0ScriptHash hash;
+        	std::copy(vSolutions[0].begin(), vSolutions[0].end(), vithash.begin());
+			addrType=4;
+       		return true;
+    	} else if (whichType == TX_WITNESS_UNKNOWN) {
+        	WitnessUnknown unk;
+        	unk.version = vSolutions[0][0];
+        	std::copy(vSolutions[1].begin(), vSolutions[1].end(), unk.program);
+        	unk.length = vSolutions[1].size();
+        	//addressRet = unk;
+			addrType=5;
+        	return true;
+    	}
 	}
 	addrhash.SetNull();
 	addrType=0;

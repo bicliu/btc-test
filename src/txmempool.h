@@ -524,6 +524,15 @@ private:
     typedef std::map<uint256, std::vector<CSpentIndexKey> > mapSpentIndexInserted;
     mapSpentIndexInserted mapSpentInserted;
 
+	typedef std::map<CMempoolVitAddrDeltaKey, CMempoolAddressDelta, CMempoolAddressDeltaKeyCompare> vitaddrDeltaMap;
+    vitaddrDeltaMap mapVitAddr;
+
+    typedef std::map<uint256, std::vector<CMempoolVitAddrDeltaKey> > vitaddrDeltaMapInserted;
+    vitaddrDeltaMapInserted mapVitAddrInserted;
+
+    typedef std::map<CSpentIndexKey, CVitSpentIndexValue, CSpentIndexKeyCompare> mapVitSpentIndex;
+    mapVitSpentIndex mapVitSpent;
+
     void UpdateParent(txiter entry, txiter parent, bool add);
     void UpdateChild(txiter entry, txiter child, bool add);
 
