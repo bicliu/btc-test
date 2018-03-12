@@ -457,7 +457,7 @@ bool CTxMemPool::getAddressIndex(const std::vector<CTxDestination> &addresses,
 {
     LOCK(cs);
     //for (std::vector<CTxDestination>::iterator it = addresses.begin(); it != addresses.end(); it++) {
-    #if 1
+    #if 0
 	for (const CTxDestination& addr : addresses) {
 		unsigned int type;
 		uint160 addrhash;
