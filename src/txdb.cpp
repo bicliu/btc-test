@@ -355,8 +355,8 @@ bool CBlockTreeDB::ReadAddressIndex(/*uint160 addressHash, uint256 vitnessHash, 
 	uint256 vitnessHash;
 	unsigned int type;
 
-	if (boost::get<CNoDestination>(&address))
-        return error("no Destination");
+	//if (boost::get<CNoDestination>(&address))
+        //return error("no Destination");
 	//if(!GetHashByDestination(addressHash, vitnessHash, type, temp))
 	//	return error("unknow Destination types");
 
