@@ -1104,8 +1104,6 @@ bool GetAddressIndex(/*uint160 addressHash, uint256 vitnessHash, int type,*/cons
     if (!fAddressIndex)
         return error("address index not enabled");
 
-	if (boost::get<CNoDestination>(&address))
-        return error("no Destination");
     if (!pblocktree->ReadAddressIndex(address, addressIndex, start, end))
         return error("unable to get txids for address");
 
