@@ -799,8 +799,6 @@ UniValue getaddressbalance(const JSONRPCRequest& request)
     std::vector<std::pair<CAddressIndexKey, CAmount> > addressIndex;
 
     for (const CTxDestination& addr : addresses) {
-		if (boost::get<CNoDestination>(&addr))
-        	throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "CNoDestination");
         if (!GetAddressIndex(addr, addressIndex)) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "No information available for address");
         }
