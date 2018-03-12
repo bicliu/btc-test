@@ -355,7 +355,8 @@ bool CBlockTreeDB::ReadAddressIndex(/*uint160 addressHash, uint256 vitnessHash, 
 	uint256 vitnessHash;
 	unsigned int type;
 
-	if(!GetHashByDestination(addressHash, vitnessHash, type, address))
+	CTxDestination temp;
+	if(!GetHashByDestination(addressHash, vitnessHash, type, temp))
 		return error("unknow Destination types");
 
 	if (start > 0 && end > 0) {
