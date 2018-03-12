@@ -1098,7 +1098,7 @@ bool GetSpentIndex(CSpentIndexKey &key, CSpentIndexValue &value)
     return true;
 }
 
-bool GetAddressIndex(/*uint160 addressHash, uint256 vitnessHash, int type,*/CTxDestination address,
+bool GetAddressIndex(/*uint160 addressHash, uint256 vitnessHash, int type,*/CTxDestination * address,
                      std::vector<std::pair<CAddressIndexKey, CAmount> > &addressIndex, int start, int end)
 {
     if (!fAddressIndex)

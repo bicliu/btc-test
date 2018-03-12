@@ -735,11 +735,11 @@ UniValue getaddressdeltas(const JSONRPCRequest& request)
 
     for (const CTxDestination& addr : addresses) {
         if (start > 0 && end > 0) {
-            if (!GetAddressIndex(addr, addressIndex, start, end)) {
+            if (!GetAddressIndex(&addr, addressIndex, start, end)) {
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "No information available for address");
             }
         } else {
-            if (!GetAddressIndex(addr, addressIndex)) {
+            if (!GetAddressIndex(&addr, addressIndex)) {
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "No information available for address");
             }
         }
@@ -799,7 +799,7 @@ UniValue getaddressbalance(const JSONRPCRequest& request)
     std::vector<std::pair<CAddressIndexKey, CAmount> > addressIndex;
 
     for (const CTxDestination& addr : addresses) {
-        if (!GetAddressIndex(addr, addressIndex)) {
+        if (!GetAddressIndex(&addr, addressIndex)) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "No information available for address");
         }
     }
@@ -869,11 +869,11 @@ UniValue getaddresstxids(const JSONRPCRequest& request)
 
     for (const CTxDestination& addr : addresses) {
         if (start > 0 && end > 0) {
-            if (!GetAddressIndex(addr, addressIndex, start, end)) {
+            if (!GetAddressIndex(&addr, addressIndex, start, end)) {
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "No information available for address");
             }
         } else {
-            if (!GetAddressIndex(addr, addressIndex)) {
+            if (!GetAddressIndex(&addr, addressIndex)) {
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "No information available for address");
             }
         }
