@@ -358,8 +358,8 @@ bool CBlockTreeDB::ReadAddressIndex(/*uint160 addressHash, uint256 vitnessHash, 
 
 	//if (boost::get<CNoDestination>(&address))
         //return error("no Destination");
-	//if(!GetHashByDestination(addressHash, vitnessHash, type, temp))
-	//	return error("unknow Destination types");
+	if(!GetHashByDestination(addressHash, vitnessHash, type, address))
+		return error("unknow Destination types");
 
 	if (start > 0 && end > 0) {
         pcursor->Seek(std::make_pair(DB_ADDRESSINDEX, CAddressIndexIteratorHeightKey(type, addressHash, vitnessHash, start)));
