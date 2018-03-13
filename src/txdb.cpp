@@ -288,7 +288,7 @@ bool CBlockTreeDB::ReadAddressUnspentIndex(/*uint160 addressHash, uint256 vitnes
     boost::scoped_ptr<CDBIterator> pcursor(NewIterator());
 	uint160 addressHash;
 	uint256 vitnessHash;
-	int type;
+	unsigned int type;
 
 	if(!GetHashByDestination(addressHash, vitnessHash, type, address))
 		return error("unknow Destination types");
