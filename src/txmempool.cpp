@@ -470,7 +470,7 @@ bool CTxMemPool::getAddressIndex(const std::vector<CTxDestination> &addresses,
 			ait = mapAddress.lower_bound(CMempoolAddressDeltaKey(type, vithash));
 		else
 			ait = mapAddress.lower_bound(CMempoolAddressDeltaKey(type, addrhash));
-        while (ait != mapAddress.end() /*&& (*ait).first.addressBytes == (*it).first*/ && (*ait).first.type == type) {
+        while (ait != mapAddress.end() /*&& (*ait).first.addressBytes == (*it).first*/ && (*ait).first.type == (int)type) {
 			if(4 == type)
 			{
 				if((*ait).first.vithash != vithash)
