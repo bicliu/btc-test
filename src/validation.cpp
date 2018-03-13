@@ -1116,6 +1116,8 @@ bool GetVitAddrIndex(const CTxDestination& dest,
 	if (!fAddressIndex)
         return error("address index not enabled");
 
+	std::vector<CTxDestination> tlist;
+	tlist.push_back(dest);
 	return true;
 }
 
