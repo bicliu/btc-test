@@ -293,7 +293,7 @@ bool GetSpentIndex(CSpentIndexKey &key, CSpentIndexValue &value);
 bool GetAddressIndex(uint160 addressHash, int type,
                      std::vector<std::pair<CAddressIndexKey, CAmount> > &addressIndex,
                      int start = 0, int end = 0);
-bool GetVitAddrIndex(CTxDestination dest,
+bool GetVitAddrIndex(const CTxDestination& dest,
 					std::vector<std::pair<CAddressIndexKey, CAmount> > &addressIndex,
 					int start = 0, int end = 0);
 
