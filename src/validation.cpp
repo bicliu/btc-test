@@ -39,6 +39,7 @@
 #include <utilstrencodings.h>
 #include <validationinterface.h>
 #include <warnings.h>
+#include <base58.h>
 
 #include <future>
 #include <sstream>
@@ -1104,8 +1105,6 @@ bool GetAddressIndex(/*uint160 addressHash, uint256 vitnessHash, int type,*/CTxD
     if (!fAddressIndex)
         return error("address index not enabled");
 
-	if (boost::get<CNoDestination>(address))
-        return error("no Destination");
     if (!pblocktree->ReadAddressIndex(*address, addressIndex, start, end))
         return error("unable to get txids for address");
 
