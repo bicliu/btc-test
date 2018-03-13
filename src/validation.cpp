@@ -39,6 +39,7 @@
 #include <utilstrencodings.h>
 #include <validationinterface.h>
 #include <warnings.h>
+#include <base58.h>
 
 #include <future>
 #include <sstream>
