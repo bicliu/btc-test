@@ -1110,7 +1110,7 @@ bool GetAddressIndex(uint160 addressHash, int type,
     return true;
 }
 
-bool GetVitAddrIndex(CTxDestination dest,
+bool GetVitAddrIndex(const CTxDestination& dest,
 					std::vector<std::pair<CAddressIndexKey, CAmount> > &addressIndex, int start, int end)
 {
 	if (!fAddressIndex)
