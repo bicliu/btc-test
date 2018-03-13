@@ -17,6 +17,8 @@
 #include <util.h>
 #include <utilmoneystr.h>
 #include <utiltime.h>
+#include <base58.h>
+
 
 CTxMemPoolEntry::CTxMemPoolEntry(const CTransactionRef& _tx, const CAmount& _nFee,
                                  int64_t _nTime, unsigned int _entryHeight,
